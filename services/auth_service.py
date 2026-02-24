@@ -25,12 +25,13 @@ class AuthService:
         """
         self.db = db_session
     
-    def create_access_token(self, user_id: str, email: str) -> str:
+    def create_access_token(self, user_id: str, email: str, extra_claims: Optional[Dict[str, Any]] = None) -> str:
         """Create a JWT access token.
         
         Args:
             user_id: User ID
             email: User email
+            extra_claims: Optional dictionary of additional claims to include in the token
             
         Returns:
             JWT token string
@@ -43,6 +44,10 @@ class AuthService:
             "exp": expire
         }
         
+        # Add extra claims if provided
+        if extra_claims:
+            to_encode.update(extra_claims)
+        
         encoded_jwt = jwt.encode(to_encode, config.SECRET_KEY, algorithm=config.ALGORITHM)
         return encoded_jwt
     
@@ -53,7 +58,7 @@ class AuthService:
             token: JWT token string
             
         Returns:
-            Dictionary containing token payload
+            Dictionary containing token payload with all claims
             
         Raises:
             AuthenticationError: If token is invalid or expired
@@ -66,7 +71,12 @@ class AuthService:
             if user_id is None or email is None:
                 raise AuthenticationError("Invalid token payload")
             
-            return {"user_id": user_id, "email": email}
+            # Return full payload including extra claims
+            return {
+                "user_id": user_id,
+                "email": email,
+                **{k: v for k, v in payload.items() if k not in ["sub", "email", "exp"]}
+            }
             
         except JWTError as e:
             raise AuthenticationError(f"Invalid token: {str(e)}")

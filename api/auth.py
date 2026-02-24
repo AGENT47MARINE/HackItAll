@@ -103,6 +103,59 @@ async def get_current_user(
         )
 
 
+async def require_admin(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """Dependency to verify current user has admin privileges.
+    
+    Args:
+        credentials: HTTP authorization credentials
+        db: Database session
+        
+    Returns:
+        User ID from token
+        
+    Raises:
+        HTTPException: If authentication fails or user is not admin
+    """
+    auth_service = AuthService(db)
+    
+    try:
+        token = credentials.credentials
+        payload = auth_service.verify_token(token)
+        user_id = payload["user_id"]
+        
+        # Verify user exists
+        user = auth_service.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Check for admin role in token payload
+        # For now, we'll check if the payload has an 'is_admin' field
+        # In a production system, this would be stored in the database
+        is_admin = payload.get("is_admin", False)
+        
+        if not is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin privileges required"
+            )
+        
+        return user_id
+        
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """Register a new user and return access token.

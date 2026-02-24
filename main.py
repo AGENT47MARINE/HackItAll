@@ -8,6 +8,7 @@ from config import config
 from database import init_db
 from api.auth import router as auth_router
 from api.profile import router as profile_router
+from api.opportunity import router as opportunity_router
 
 
 @asynccontextmanager
@@ -40,6 +41,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router)
 app.include_router(profile_router)
+app.include_router(opportunity_router)
 
 
 @app.get("/")

@@ -248,7 +248,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - DELETE /api/profile - Delete account
     - _Requirements: 1.1, 1.2, 1.3, 10.3_
   
-  - [~] 14.2 Create opportunity endpoints
+  - [x] 14.2 Create opportunity endpoints
     - GET /api/opportunities - Search and filter opportunities
     - GET /api/opportunities/:id - Get opportunity details
     - GET /api/recommendations - Get personalized recommendations
