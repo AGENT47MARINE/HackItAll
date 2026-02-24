@@ -120,7 +120,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - Add indexes for efficient queries
     - _Requirements: 3.1, 9.1, 9.2_
   
-  - [~] 7.2 Implement ApplicationTrackerService
+  - [x] 7.2 Implement ApplicationTrackerService
     - Write save_opportunity(), get_tracked_opportunities(), remove_tracked_opportunity() methods
     - Implement deadline sorting (ascending)
     - Add mark_as_expired() for past deadlines
@@ -256,7 +256,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - PUT /api/admin/opportunities/:id - Update opportunity (admin only)
     - _Requirements: 2.1, 2.4, 2.5, 7.1, 7.4, 8.1_
   
-  - [~] 14.3 Create tracking endpoints
+  - [x] 14.3 Create tracking endpoints
     - POST /api/tracked - Save opportunity to tracker
     - GET /api/tracked - Get tracked opportunities
     - DELETE /api/tracked/:id - Remove tracked opportunity
