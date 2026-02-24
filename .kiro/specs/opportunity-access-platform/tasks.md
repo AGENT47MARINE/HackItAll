@@ -114,7 +114,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - _Requirements: 8.1, 8.5_
 
 - [ ] 7. Implement application tracking system
-  - [~] 7.1 Create TrackedOpportunity and ParticipationHistory models
+  - [x] 7.1 Create TrackedOpportunity and ParticipationHistory models
     - Define TrackedOpportunity model with user_id, opportunity_id, saved_at, is_expired
     - Define ParticipationHistory model with id, user_id, opportunity_id, status, notes, timestamp
     - Add indexes for efficient queries

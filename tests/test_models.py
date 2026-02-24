@@ -135,3 +135,158 @@ class TestDatabaseSchema:
             for col in inspector.get_columns('users') 
             if col.get('unique', False)
         )
+
+
+
+class TestTrackedOpportunityModel:
+    """Tests for TrackedOpportunity model."""
+    
+    def test_tracked_opportunity_creation(self):
+        """Test creating a TrackedOpportunity instance."""
+        from models.tracking import TrackedOpportunity
+        
+        tracked = TrackedOpportunity(
+            user_id="test-user-id",
+            opportunity_id="test-opportunity-id"
+        )
+        
+        assert tracked.user_id == "test-user-id"
+        assert tracked.opportunity_id == "test-opportunity-id"
+        assert isinstance(tracked.saved_at, datetime)
+        assert tracked.is_expired is False
+    
+    def test_tracked_opportunity_with_expired(self):
+        """Test creating a TrackedOpportunity with is_expired flag."""
+        from models.tracking import TrackedOpportunity
+        
+        tracked = TrackedOpportunity(
+            user_id="test-user-id",
+            opportunity_id="test-opportunity-id",
+            is_expired=True
+        )
+        
+        assert tracked.is_expired is True
+
+
+class TestParticipationHistoryModel:
+    """Tests for ParticipationHistory model."""
+    
+    def test_participation_history_creation(self):
+        """Test creating a ParticipationHistory instance."""
+        from models.tracking import ParticipationHistory
+        
+        participation = ParticipationHistory(
+            user_id="test-user-id",
+            opportunity_id="test-opportunity-id",
+            status="applied",
+            notes="Submitted application on time"
+        )
+        
+        assert participation.user_id == "test-user-id"
+        assert participation.opportunity_id == "test-opportunity-id"
+        assert participation.status == "applied"
+        assert participation.notes == "Submitted application on time"
+        assert participation.id is not None  # UUID should be generated
+        assert isinstance(participation.created_at, datetime)
+    
+    def test_participation_history_without_notes(self):
+        """Test creating a ParticipationHistory without notes."""
+        from models.tracking import ParticipationHistory
+        
+        participation = ParticipationHistory(
+            user_id="test-user-id",
+            opportunity_id="test-opportunity-id",
+            status="completed"
+        )
+        
+        assert participation.status == "completed"
+        assert participation.notes is None
+    
+    def test_participation_history_statuses(self):
+        """Test different participation statuses."""
+        from models.tracking import ParticipationHistory
+        
+        statuses = ["applied", "accepted", "rejected", "completed"]
+        
+        for status in statuses:
+            participation = ParticipationHistory(
+                user_id="test-user-id",
+                opportunity_id="test-opportunity-id",
+                status=status
+            )
+            assert participation.status == status
+
+
+class TestTrackingDatabaseSchema:
+    """Tests for tracking tables schema."""
+    
+    def test_tracking_tables_can_be_created(self):
+        """Test that tracking tables can be created without errors."""
+        Base.metadata.create_all(bind=engine)
+        
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        table_names = inspector.get_table_names()
+        
+        assert "tracked_opportunities" in table_names
+        assert "participation_history" in table_names
+    
+    def test_tracked_opportunities_table_columns(self):
+        """Test TrackedOpportunity table has all required columns."""
+        Base.metadata.create_all(bind=engine)
+        
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        columns = {col['name']: col for col in inspector.get_columns('tracked_opportunities')}
+        
+        assert 'user_id' in columns
+        assert 'opportunity_id' in columns
+        assert 'saved_at' in columns
+        assert 'is_expired' in columns
+    
+    def test_participation_history_table_columns(self):
+        """Test ParticipationHistory table has all required columns."""
+        Base.metadata.create_all(bind=engine)
+        
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        columns = {col['name']: col for col in inspector.get_columns('participation_history')}
+        
+        assert 'id' in columns
+        assert 'user_id' in columns
+        assert 'opportunity_id' in columns
+        assert 'status' in columns
+        assert 'notes' in columns
+        assert 'created_at' in columns
+    
+    def test_tracked_opportunities_indexes(self):
+        """Test TrackedOpportunity table has required indexes."""
+        Base.metadata.create_all(bind=engine)
+        
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        indexes = inspector.get_indexes('tracked_opportunities')
+        
+        # Check for composite index on user_id and is_expired
+        index_found = any(
+            set(['user_id', 'is_expired']).issubset(set(idx.get('column_names', [])))
+            for idx in indexes
+        )
+        
+        assert index_found, "Expected index on (user_id, is_expired) not found"
+    
+    def test_participation_history_indexes(self):
+        """Test ParticipationHistory table has required indexes."""
+        Base.metadata.create_all(bind=engine)
+        
+        from sqlalchemy import inspect
+        inspector = inspect(engine)
+        indexes = inspector.get_indexes('participation_history')
+        
+        # Check for index on user_id
+        index_found = any(
+            'user_id' in idx.get('column_names', [])
+            for idx in indexes
+        )
+        
+        assert index_found, "Expected index on user_id not found"
