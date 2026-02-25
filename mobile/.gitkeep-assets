@@ -1,0 +1,16 @@
+# Assets Directory
+
+This directory should contain the following image files for the mobile app:
+
+- `icon.png` (1024x1024) - App icon
+- `splash.png` (1242x2436) - Splash screen
+- `adaptive-icon.png` (1024x1024) - Android adaptive icon
+- `favicon.png` (48x48) - Web favicon
+- `notification-icon.png` (96x96) - Notification icon
+
+You can generate these assets using:
+- Design tools like Figma, Sketch, or Adobe XD
+- Online icon generators
+- Expo's asset generation tools
+
+For now, you can use placeholder images or the Expo default assets.
