@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI application
 app = FastAPI(
-    title="Opportunity Access Platform",
+    title="HackItAll - Opportunity Access Platform",
     description="AI-powered platform for discovering educational and professional opportunities",
     version="1.0.0",
     debug=config.DEBUG,
@@ -50,7 +50,7 @@ app.include_router(tracking_router)
 async def root():
     """Root endpoint."""
     return {
-        "message": "Welcome to the Opportunity Access Platform API",
+        "message": "Welcome to HackItAll - Your Gateway to Opportunities",
         "version": "1.0.0",
         "docs": "/docs"
     }

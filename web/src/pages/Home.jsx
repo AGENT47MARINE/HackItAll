@@ -53,9 +53,9 @@ export default function Home() {
             <span className="gradient-text"> Opportunity</span>
           </h1>
           <p className="hero-subtitle">
-            Explore hackathons, scholarships, internships, and skill programs.
+            HackItAll connects students with hackathons, scholarships, internships, and skill programs.
             <br />
-            No registration required to browse.
+            Browse freely. Register only when you're ready to track.
           </p>
 
           {/* Search Bar */}

@@ -14,7 +14,7 @@ export default function Layout({ onLogout, isAuthenticated }) {
         <div className="nav-container">
           <Link to="/" className="nav-brand">
             <span className="brand-icon">◆</span>
-            OpportunityHub
+            HackItAll
           </Link>
           <div className="nav-links">
             <Link to="/" className={`nav-link ${isActive('/')}`}>

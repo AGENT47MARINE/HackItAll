@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Opportunity Access Platform",
-    "slug": "opportunity-access-platform",
+    "name": "HackItAll",
+    "slug": "hackitall",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

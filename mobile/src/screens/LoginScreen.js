@@ -43,7 +43,7 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>Opportunity Access Platform</Text>
+        <Text style={styles.title}>HackItAll</Text>
         <Text style={styles.subtitle}>Discover your next opportunity</Text>
 
         <TextInput
