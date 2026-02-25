@@ -50,7 +50,7 @@
 
 .ascii-art {
   color: rgba(255, 255, 255, 0.8);
-  font-family: 'Courier New', monospace;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
   font-size: 12px;
   line-height: 1.2;
   margin: 0;
@@ -90,7 +90,7 @@
 
 .retro-notification pre {
   margin: 0;
-  font-family: 'Courier New', monospace;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
   font-size: 14px;
   color: #000;
   line-height: 1.4;

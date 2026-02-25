@@ -25,12 +25,14 @@
 
 .hero-title {
   font-size: clamp(3.5rem, 10vw, 8rem);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 0.95;
   margin-bottom: 2rem;
   letter-spacing: -0.04em;
   text-align: left;
   max-width: 900px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
 }
 
 .gradient-text {
@@ -39,8 +41,9 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  font-style: italic;
+  font-style: normal;
   transform: translateX(-5px);
+  font-weight: 900;
 }
 
 .hero-subtitle {
@@ -172,6 +175,8 @@
   letter-spacing: -0.03em;
   line-height: 1;
   padding-left: 1rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
@@ -216,6 +221,8 @@
   letter-spacing: -0.02em;
   position: relative;
   display: inline-block;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
 }
 
 .section-title::after {
@@ -376,6 +383,8 @@
   letter-spacing: -0.02em;
   max-width: 600px;
   line-height: 1.1;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
 }
 
 .cta-subtitle {

@@ -39,6 +39,8 @@
   gap: 0.625rem;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   letter-spacing: -0.02em;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
 }
 
 .nav-brand:hover {

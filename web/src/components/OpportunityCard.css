@@ -56,6 +56,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   letter-spacing: 0.05em;
+  font-family: var(--font-mono);
 }
 
 .score-badge {
@@ -68,6 +69,8 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(10px);
   letter-spacing: 0.02em;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .card-link {
