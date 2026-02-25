@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { opportunitiesAPI, trackingAPI } from '../services/api';
 import './Pages.css';
 
-export default function OpportunityDetail() {
+export default function OpportunityDetail({ isAuthenticated }) {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [opportunity, setOpportunity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,6 +26,14 @@ export default function OpportunityDetail() {
   };
 
   const handleSave = async () => {
+    if (!isAuthenticated) {
+      // Prompt user to register/login
+      if (confirm('You need to create an account to save opportunities. Would you like to register now?')) {
+        navigate('/register');
+      }
+      return;
+    }
+
     setSaving(true);
     try {
       await trackingAPI.saveOpportunity(id);
@@ -109,7 +118,7 @@ export default function OpportunityDetail() {
 
       <div className="detail-actions">
         <button onClick={handleSave} disabled={saving} className="save-button">
-          {saving ? 'Saving...' : 'Save to Tracker'}
+          {saving ? 'Saving...' : isAuthenticated ? 'Save to Tracker' : 'Save (Login Required)'}
         </button>
         <button onClick={handleApply} className="apply-button">
           Apply Now

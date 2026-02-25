@@ -68,16 +68,19 @@ export const profileAPI = {
 // Opportunities API
 export const opportunitiesAPI = {
   search: async (params = {}) => {
-    const response = await api.get('/opportunities', { params });
+    // No auth required for browsing
+    const response = await axios.get('/api/opportunities', { params });
     return response.data;
   },
 
   getById: async (id) => {
-    const response = await api.get(`/opportunities/${id}`);
+    // No auth required for viewing details
+    const response = await axios.get(`/api/opportunities/${id}`);
     return response.data;
   },
 
   getRecommendations: async (limit = 10) => {
+    // Requires auth
     const response = await api.get('/recommendations', { params: { limit } });
     return response.data;
   },

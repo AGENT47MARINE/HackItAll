@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import './Layout.css';
 
-export default function Layout({ onLogout }) {
+export default function Layout({ onLogout, isAuthenticated }) {
   const location = useLocation();
 
   const isActive = (path) => {
@@ -13,7 +13,8 @@ export default function Layout({ onLogout }) {
       <nav className="navbar">
         <div className="nav-container">
           <Link to="/" className="nav-brand">
-            Opportunity Access Platform
+            <span className="brand-icon">◆</span>
+            OpportunityHub
           </Link>
           <div className="nav-links">
             <Link to="/" className={`nav-link ${isActive('/')}`}>
@@ -22,15 +23,28 @@ export default function Layout({ onLogout }) {
             <Link to="/opportunities" className={`nav-link ${isActive('/opportunities')}`}>
               Search
             </Link>
-            <Link to="/tracked" className={`nav-link ${isActive('/tracked')}`}>
-              Saved
-            </Link>
-            <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>
-              Profile
-            </Link>
-            <button onClick={onLogout} className="nav-button">
-              Logout
-            </button>
+            {isAuthenticated ? (
+              <>
+                <Link to="/tracked" className={`nav-link ${isActive('/tracked')}`}>
+                  Saved
+                </Link>
+                <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>
+                  Profile
+                </Link>
+                <button onClick={onLogout} className="nav-button logout-button">
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="nav-button login-button">
+                  Login
+                </Link>
+                <Link to="/register" className="nav-button register-button">
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

@@ -35,7 +35,14 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: 'linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 100%)',
+        color: '#fff'
+      }}>
         <div>Loading...</div>
       </div>
     );
@@ -44,22 +51,32 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {!isAuthenticated ? (
-          <>
-            <Route path="/login" element={<Login onLogin={handleLogin} />} />
-            <Route path="/register" element={<Register onLogin={handleLogin} />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </>
-        ) : (
-          <Route path="/" element={<Layout onLogout={handleLogout} />}>
-            <Route index element={<Home />} />
-            <Route path="opportunities" element={<Opportunities />} />
-            <Route path="opportunities/:id" element={<OpportunityDetail />} />
-            <Route path="tracked" element={<Tracked />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        )}
+        {/* Public routes - no auth required */}
+        <Route path="/" element={<Layout onLogout={handleLogout} isAuthenticated={isAuthenticated} />}>
+          <Route index element={<Home />} />
+          <Route path="opportunities" element={<Opportunities />} />
+          <Route path="opportunities/:id" element={<OpportunityDetail isAuthenticated={isAuthenticated} />} />
+        </Route>
+
+        {/* Auth routes */}
+        <Route path="/login" element={
+          isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />
+        } />
+        <Route path="/register" element={
+          isAuthenticated ? <Navigate to="/" replace /> : <Register onLogin={handleLogin} />
+        } />
+
+        {/* Protected routes - auth required */}
+        <Route path="/" element={<Layout onLogout={handleLogout} isAuthenticated={isAuthenticated} />}>
+          <Route path="tracked" element={
+            isAuthenticated ? <Tracked /> : <Navigate to="/login" replace />
+          } />
+          <Route path="profile" element={
+            isAuthenticated ? <Profile /> : <Navigate to="/login" replace />
+          } />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
