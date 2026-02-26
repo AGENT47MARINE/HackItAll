@@ -1,0 +1,197 @@
+.desk-pov-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Main Terminal Window */
+.terminal-window {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: rgba(0, 255, 0, 0.8);
+  white-space: pre;
+  margin: 0;
+  animation: terminalGlow 2s ease-in-out infinite;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  transform: perspective(1000px) rotateX(2deg);
+}
+
+@keyframes terminalGlow {
+  0%, 100% {
+    opacity: 0.8;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.4);
+  }
+  50% {
+    opacity: 1;
+    text-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
+  }
+}
+
+/* Widgets */
+.widget {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  line-height: 1.3;
+  white-space: pre;
+  margin: 0;
+  animation: widgetFloat 4s ease-in-out infinite;
+}
+
+/* CPU Widget - Top Left */
+.cpu-widget {
+  top: 8%;
+  left: 5%;
+  color: rgba(255, 100, 100, 0.7);
+  text-shadow: 0 0 8px rgba(255, 100, 100, 0.4);
+  animation: widgetFloat 4s ease-in-out infinite;
+}
+
+/* Memory Widget - Top Right */
+.memory-widget {
+  top: 8%;
+  right: 5%;
+  color: rgba(100, 150, 255, 0.7);
+  text-shadow: 0 0 8px rgba(100, 150, 255, 0.4);
+  animation: widgetFloat 4.5s ease-in-out infinite;
+}
+
+/* Network Widget - Middle Left */
+.network-widget {
+  top: 35%;
+  left: 3%;
+  color: rgba(100, 255, 200, 0.7);
+  text-shadow: 0 0 8px rgba(100, 255, 200, 0.4);
+  animation: widgetFloat 5s ease-in-out infinite;
+}
+
+/* Git Widget - Middle Right */
+.git-widget {
+  top: 35%;
+  right: 3%;
+  color: rgba(255, 200, 100, 0.7);
+  text-shadow: 0 0 8px rgba(255, 200, 100, 0.4);
+  animation: widgetFloat 4.2s ease-in-out infinite;
+}
+
+/* Time Widget - Bottom Left */
+.time-widget {
+  bottom: 15%;
+  left: 5%;
+  color: rgba(200, 100, 255, 0.7);
+  text-shadow: 0 0 8px rgba(200, 100, 255, 0.4);
+  animation: widgetFloat 4.8s ease-in-out infinite;
+}
+
+/* Build Status Widget - Bottom Right */
+.build-widget {
+  bottom: 15%;
+  right: 5%;
+  color: rgba(255, 255, 100, 0.7);
+  text-shadow: 0 0 8px rgba(255, 255, 100, 0.4);
+  animation: widgetFloat 5.2s ease-in-out infinite;
+}
+
+/* Coffee Widget - Top Center */
+.coffee-widget {
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(200, 150, 100, 0.7);
+  text-shadow: 0 0 8px rgba(200, 150, 100, 0.4);
+  animation: coffeeFloat 3s ease-in-out infinite;
+}
+
+/* TODO Widget - Bottom Center */
+.todo-widget {
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(150, 255, 150, 0.7);
+  text-shadow: 0 0 8px rgba(150, 255, 150, 0.4);
+  animation: widgetFloat 4.6s ease-in-out infinite;
+}
+
+@keyframes widgetFloat {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-10px);
+    opacity: 0.9;
+  }
+}
+
+@keyframes coffeeFloat {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateX(-50%) translateY(-8px);
+    opacity: 0.9;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .terminal-window {
+    font-size: 0.55rem;
+  }
+  
+  .widget {
+    font-size: 0.5rem;
+  }
+  
+  .desk-pov-background {
+    opacity: 0.1;
+  }
+}
+
+@media (max-width: 768px) {
+  .desk-pov-background {
+    opacity: 0.08;
+  }
+  
+  .terminal-window {
+    font-size: 0.45rem;
+  }
+  
+  .widget {
+    font-size: 0.4rem;
+  }
+  
+  /* Hide some widgets on mobile */
+  .network-widget,
+  .git-widget,
+  .coffee-widget,
+  .todo-widget {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .terminal-window {
+    font-size: 0.35rem;
+  }
+  
+  /* Only show terminal on very small screens */
+  .cpu-widget,
+  .memory-widget,
+  .time-widget,
+  .build-widget {
+    display: none;
+  }
+}
+

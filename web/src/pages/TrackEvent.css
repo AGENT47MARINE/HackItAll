@@ -1,0 +1,309 @@
+/* ═══════════════════════════════════════════════════════════════
+   Track Event Page Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+.track-page {
+    min-height: 100vh;
+    background: #050508;
+    color: #fff;
+    position: relative;
+}
+
+.track-grid-bg {
+    position: fixed;
+    inset: 0;
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+}
+
+/* Navigation */
+.track-nav {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 3rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.track-nav-brand {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fff;
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.track-back-link {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.track-back-link:hover {
+    color: #fff;
+}
+
+/* Content */
+.track-content {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+}
+
+/* Loading */
+.track-loading {
+    text-align: center;
+    padding: 6rem 0;
+}
+
+.track-spinner {
+    width: 36px;
+    height: 36px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #00f0ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1.5rem;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.track-loading-text {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 1rem;
+}
+
+.track-loading-url {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: rgba(0, 240, 255, 0.4);
+    word-break: break-all;
+}
+
+/* Status Bar */
+.track-status-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #00ff88;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1.5rem;
+}
+
+.track-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00ff88;
+    animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+
+    0%,
+    100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4);
+    }
+
+    50% {
+        opacity: 0.7;
+        box-shadow: 0 0 0 6px rgba(0, 255, 136, 0);
+    }
+}
+
+/* Event Card */
+.track-event-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 2rem;
+    backdrop-filter: blur(16px);
+}
+
+.track-event-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.track-platform-badge {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #00f0ff;
+    padding: 0.25rem 0.65rem;
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    border-radius: 6px;
+    background: rgba(0, 240, 255, 0.05);
+}
+
+.track-event-domain {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.track-event-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+}
+
+.track-event-url-wrap {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+}
+
+.track-event-url {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    word-break: break-all;
+}
+
+/* Actions */
+.track-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+}
+
+.track-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 2rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-family: var(--font-sans);
+}
+
+.track-action-btn.primary {
+    background: #fff;
+    color: #050508;
+}
+
+.track-action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(255, 255, 255, 0.2);
+}
+
+.track-action-btn.ghost {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.track-action-btn.ghost:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Features Preview */
+.track-features-preview {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 2rem;
+}
+
+.track-features-preview h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 1.5rem;
+}
+
+.track-features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+.track-feature-item {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.track-feature-item span {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.track-feature-item strong {
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 0.15rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.track-feature-item p {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.3);
+    margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .track-nav {
+        padding: 1rem 1.5rem;
+    }
+
+    .track-content {
+        padding: 3rem 1.5rem;
+    }
+
+    .track-event-card {
+        padding: 1.5rem;
+    }
+
+    .track-event-title {
+        font-size: 1.35rem;
+    }
+
+    .track-actions {
+        flex-direction: column;
+    }
+
+    .track-action-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .track-features-grid {
+        grid-template-columns: 1fr;
+    }
+}

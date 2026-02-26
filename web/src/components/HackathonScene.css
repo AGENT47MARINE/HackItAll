@@ -1,0 +1,602 @@
+.hackathon-scene-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: #0a0a0f;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  perspective: 1500px;
+  perspective-origin: center center;
+}
+
+.hackathon-scene {
+  display: flex;
+  gap: 4rem;
+  padding: 4rem 2rem;
+  min-height: 100vh;
+  align-items: center;
+  transition: transform 0.5s ease-out;
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+
+/* HUD Overlay */
+.hud-overlay {
+  position: fixed;
+  top: 100px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  pointer-events: none;
+  display: flex;
+  justify-content: space-between;
+  padding: 2rem;
+}
+
+.hud-top-left,
+.hud-top-right {
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.hud-stats,
+.hud-mission {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: rgba(0, 255, 0, 0.9);
+  line-height: 1.4;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+  animation: hudPulse 2s ease-in-out infinite;
+}
+
+@keyframes hudPulse {
+  0%, 100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Scene Sections */
+.scene-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+  justify-content: center;
+  min-width: 800px;
+  padding: 2rem;
+  transform-style: preserve-3d;
+}
+
+.scene-section pre {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: pre;
+  margin: 0;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* POV Desk - Main Focus */
+.pov-desk {
+  min-width: 1200px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 200px 1fr 200px;
+  grid-template-rows: auto auto;
+  gap: 2rem;
+  align-items: start;
+  justify-items: center;
+}
+
+.your-laptop {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 0.7rem;
+  color: rgba(100, 255, 100, 0.9);
+  animation: screenGlow 3s ease-in-out infinite;
+  transform: translateZ(50px);
+}
+
+.coffee-cup-left {
+  grid-column: 1;
+  grid-row: 1;
+  color: rgba(200, 150, 100, 0.8);
+  animation: steam 2s ease-in-out infinite;
+  transform: translateZ(30px);
+}
+
+.notebook-right {
+  grid-column: 3;
+  grid-row: 1;
+  color: rgba(255, 255, 200, 0.7);
+  transform: translateZ(30px);
+}
+
+.phone-device {
+  grid-column: 3;
+  grid-row: 2;
+  color: rgba(150, 150, 255, 0.8);
+  animation: phoneVibrate 5s ease-in-out infinite;
+  transform: translateZ(20px);
+}
+
+@keyframes screenGlow {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(100, 255, 100, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 40px rgba(100, 255, 100, 0.6);
+  }
+}
+
+@keyframes phoneVibrate {
+  0%, 90%, 100% {
+    transform: translateZ(20px) translateX(0);
+  }
+  92%, 96% {
+    transform: translateZ(20px) translateX(-2px);
+  }
+  94%, 98% {
+    transform: translateZ(20px) translateX(2px);
+  }
+}
+
+/* Teammates Area */
+.teammates-area {
+  min-width: 1000px;
+  display: flex;
+  gap: 3rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.teammate {
+  font-size: 0.75rem;
+  animation: typing 3s ease-in-out infinite;
+}
+
+.teammate-left {
+  color: rgba(100, 200, 255, 0.8);
+  transform: translateZ(20px) rotateY(5deg);
+}
+
+.teammate-center {
+  color: rgba(100, 255, 150, 0.8);
+  transform: translateZ(30px);
+}
+
+.teammate-right {
+  color: rgba(255, 100, 100, 0.8);
+  transform: translateZ(20px) rotateY(-5deg);
+}
+
+.coffee-row {
+  animation: steam 2s ease-in-out infinite;
+}
+
+@keyframes steam {
+  0%, 100% {
+    opacity: 0.7;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.workstations {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.station {
+  animation: typing 3s ease-in-out infinite;
+}
+
+.station-1 {
+  animation-delay: 0s;
+}
+
+.station-2 {
+  animation-delay: 0.5s;
+  color: rgba(100, 255, 100, 0.7);
+}
+
+.station-3 {
+  animation-delay: 1s;
+  color: rgba(100, 200, 255, 0.7);
+}
+
+.station-4 {
+  animation-delay: 1.5s;
+  color: rgba(255, 100, 100, 0.7);
+}
+
+@keyframes typing {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.scattered-items {
+  margin-top: 2rem;
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Whiteboard Area */
+.whiteboard-area {
+  min-width: 900px;
+}
+
+.whiteboard-large {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.7rem;
+  transform: translateZ(40px);
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* Food Area */
+.food-area {
+  min-width: 800px;
+}
+
+.food-table-large {
+  color: rgba(255, 200, 100, 0.85);
+  font-size: 0.7rem;
+  transform: translateZ(25px);
+  animation: foodGlow 4s ease-in-out infinite;
+}
+
+@keyframes foodGlow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(255, 200, 100, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(255, 200, 100, 0.5);
+  }
+}
+
+.eating-people {
+  margin-top: 2rem;
+  animation: munch 2s ease-in-out infinite;
+}
+
+@keyframes munch {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Team Huddle */
+.team-huddle {
+  animation: fadeInScale 1s ease-out 0.7s both;
+}
+
+.team-huddle pre {
+  color: rgba(150, 200, 255, 0.8);
+}
+
+/* Sleep Zone */
+.sleep-area {
+  min-width: 800px;
+}
+
+.sleep-zone-large {
+  color: rgba(150, 150, 200, 0.7);
+  font-size: 0.7rem;
+  animation: breathe 4s ease-in-out infinite;
+  transform: translateZ(15px);
+}
+
+@keyframes breathe {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Stage Area */
+.stage-area {
+  min-width: 900px;
+}
+
+.stage-large {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.65rem;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  animation: stageGlow 3s ease-in-out infinite;
+  transform: translateZ(60px);
+}
+
+@keyframes stageGlow {
+  0%, 100% {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+  }
+}
+
+/* Atmosphere */
+.atmosphere {
+  min-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.wifi-signals-large {
+  color: rgba(100, 200, 255, 0.7);
+  font-size: 0.7rem;
+  animation: signal 2s ease-in-out infinite;
+  transform: translateZ(10px);
+}
+
+@keyframes signal {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+.sticky-notes-large {
+  color: rgba(255, 255, 100, 0.8);
+  font-size: 0.7rem;
+  transform: translateZ(15px);
+}
+
+.cables-large {
+  color: rgba(100, 100, 100, 0.6);
+  font-size: 0.65rem;
+  animation: wiggle 3s ease-in-out infinite;
+  transform: translateZ(5px);
+}
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+/* Victory Area */
+.victory-area {
+  min-width: 800px;
+}
+
+.celebration,
+.celebration-large {
+  color: rgba(255, 215, 0, 0.95);
+  font-size: 0.7rem;
+  animation: celebrate 2s ease-in-out infinite;
+  text-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+  transform: translateZ(70px);
+}
+
+@keyframes celebrate {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.05) rotate(-2deg);
+  }
+  75% {
+    transform: scale(1.05) rotate(2deg);
+  }
+}
+
+/* Floating Elements */
+.floating-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.float-item {
+  position: absolute;
+  animation: floatAround 10s ease-in-out infinite;
+}
+
+.float-item pre {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.notification-1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.notification-2 {
+  top: 60%;
+  left: 30%;
+  animation-delay: 3s;
+}
+
+.notification-3 {
+  top: 40%;
+  left: 70%;
+  animation-delay: 6s;
+}
+
+@keyframes floatAround {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate(20px, -30px);
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(40px, -60px);
+    opacity: 0;
+  }
+}
+
+/* Animations */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .hackathon-scene {
+    gap: 3rem;
+    padding: 2rem 1rem;
+  }
+
+  .scene-section {
+    min-width: 600px;
+  }
+
+  .scene-section pre {
+    font-size: 0.7rem;
+  }
+
+  .pov-desk {
+    min-width: 800px;
+    grid-template-columns: 150px 1fr 150px;
+  }
+
+  .your-laptop {
+    font-size: 0.6rem;
+  }
+
+  .hud-overlay {
+    padding: 1rem;
+  }
+
+  .hud-stats,
+  .hud-mission {
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hackathon-scene-wrapper {
+    min-height: 70vh;
+  }
+
+  .hackathon-scene {
+    gap: 2rem;
+    padding: 1rem;
+  }
+
+  .scene-section {
+    min-width: 400px;
+  }
+
+  .scene-section pre {
+    font-size: 0.55rem;
+  }
+
+  .pov-desk {
+    min-width: 500px;
+    grid-template-columns: 100px 1fr 100px;
+    gap: 1rem;
+  }
+
+  .your-laptop {
+    font-size: 0.45rem;
+  }
+
+  .hud-overlay {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.5rem;
+  }
+
+  .hud-stats,
+  .hud-mission {
+    font-size: 0.55rem;
+  }
+}

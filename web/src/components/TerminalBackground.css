@@ -1,0 +1,213 @@
+/* ═══════════════════════════════════════════════════
+   Terminal Background — Floating terminal windows
+   ═══════════════════════════════════════════════════ */
+
+.terminal-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* Shared terminal window styles */
+.terminal-bg-window {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Primary terminal — large, center-ish */
+.terminal-bg-window:not(.terminal-bg-secondary):not(.terminal-bg-tertiary) {
+    top: 8%;
+    left: 5%;
+    width: 55%;
+    max-width: 680px;
+    animation: float-terminal-1 12s ease-in-out infinite;
+}
+
+/* Secondary terminal — smaller, right side */
+.terminal-bg-secondary {
+    bottom: 12%;
+    right: 4%;
+    width: 35%;
+    max-width: 400px;
+    opacity: 0.5;
+    animation: float-terminal-2 15s ease-in-out infinite;
+}
+
+/* Tertiary terminal — smallest, left-bottom area */
+.terminal-bg-tertiary {
+    bottom: 5%;
+    left: 8%;
+    width: 26%;
+    max-width: 300px;
+    opacity: 0.35;
+    animation: float-terminal-3 18s ease-in-out infinite;
+}
+
+@keyframes float-terminal-1 {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(-1deg);
+    }
+
+    33% {
+        transform: translateY(-8px) rotate(0deg);
+    }
+
+    66% {
+        transform: translateY(4px) rotate(-0.5deg);
+    }
+}
+
+@keyframes float-terminal-2 {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(1deg);
+    }
+
+    50% {
+        transform: translateY(-12px) rotate(0.5deg);
+    }
+}
+
+@keyframes float-terminal-3 {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0.5deg);
+    }
+
+    50% {
+        transform: translateY(8px) rotate(-0.5deg);
+    }
+}
+
+/* Chrome bar */
+.terminal-bg-chrome {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    gap: 5px;
+}
+
+.tbg-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.tbg-red {
+    background: rgba(255, 95, 86, 0.7);
+}
+
+.tbg-yellow {
+    background: rgba(255, 189, 46, 0.7);
+}
+
+.tbg-green {
+    background: rgba(39, 201, 63, 0.7);
+}
+
+.terminal-bg-title {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.2);
+}
+
+/* Body */
+.terminal-bg-body {
+    padding: 0.75rem 1rem;
+    max-height: 360px;
+    overflow: hidden;
+}
+
+.terminal-bg-line {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    line-height: 1.65;
+    white-space: pre;
+    animation: fadein-line 0.15s ease-out;
+}
+
+@keyframes fadein-line {
+    from {
+        opacity: 0;
+        transform: translateY(3px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Cursor */
+.terminal-bg-cursor {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: rgba(39, 201, 63, 0.6);
+    transition: opacity 0.05s;
+}
+
+.terminal-bg-cursor.off {
+    opacity: 0;
+}
+
+/* Text colors */
+.tl-green {
+    color: rgba(39, 201, 63, 0.7);
+}
+
+.tl-cyan {
+    color: rgba(0, 240, 255, 0.6);
+}
+
+.tl-purple {
+    color: rgba(178, 102, 255, 0.6);
+}
+
+.tl-dim {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .terminal-bg-secondary {
+        display: none;
+    }
+
+    .terminal-bg-tertiary {
+        display: none;
+    }
+
+    .terminal-bg-window:not(.terminal-bg-secondary):not(.terminal-bg-tertiary) {
+        width: 75%;
+        left: 12%;
+        top: 5%;
+    }
+}
+
+@media (max-width: 768px) {
+    .terminal-bg-window:not(.terminal-bg-secondary):not(.terminal-bg-tertiary) {
+        width: 90%;
+        left: 5%;
+        top: 3%;
+        opacity: 0.4;
+    }
+
+    .terminal-bg-line {
+        font-size: 0.55rem;
+    }
+}

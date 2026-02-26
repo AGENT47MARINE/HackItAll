@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Home from './pages/Home';
+import HomeScrollStory from './pages/HomeScrollStory';
+import TrackEvent from './pages/TrackEvent';
 import Opportunities from './pages/Opportunities';
 import OpportunityDetail from './pages/OpportunityDetail';
 import Tracked from './pages/Tracked';
@@ -35,10 +36,10 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         height: '100vh',
         background: 'linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 100%)',
         color: '#fff'
@@ -51,9 +52,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Scroll Story Homepage - No Layout */}
+        <Route path="/" element={<HomeScrollStory />} />
+        <Route path="/track" element={<TrackEvent />} />
+
         {/* Public routes - no auth required */}
         <Route path="/" element={<Layout onLogout={handleLogout} isAuthenticated={isAuthenticated} />}>
-          <Route index element={<Home />} />
           <Route path="opportunities" element={<Opportunities />} />
           <Route path="opportunities/:id" element={<OpportunityDetail isAuthenticated={isAuthenticated} />} />
         </Route>

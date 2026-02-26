@@ -1,0 +1,600 @@
+import { useState, useEffect, useRef } from 'react';
+import './HackathonScene.css';
+
+export default function HackathonScene({ scrollProgress }) {
+  const [time, setTime] = useState('02:47');
+  const [blinkCursor, setBlinkCursor] = useState(true);
+  const [codeLines, setCodeLines] = useState(0);
+  const sceneRef = useRef(null);
+
+  useEffect(() => {
+    // Animate time
+    const timeInterval = setInterval(() => {
+      const hours = Math.floor(Math.random() * 4) + 1;
+      const mins = Math.floor(Math.random() * 60);
+      setTime(`0${hours}:${mins.toString().padStart(2, '0')}`);
+    }, 5000);
+
+    // Blink cursor
+    const cursorInterval = setInterval(() => {
+      setBlinkCursor(prev => !prev);
+    }, 500);
+
+    // Code counter
+    const codeInterval = setInterval(() => {
+      setCodeLines(prev => prev + Math.floor(Math.random() * 10));
+    }, 3000);
+
+    return () => {
+      clearInterval(timeInterval);
+      clearInterval(cursorInterval);
+      clearInterval(codeInterval);
+    };
+  }, []);
+
+  // Calculate 3D perspective based on scroll
+  const perspective = 1000 + (scrollProgress * 500);
+  const rotateY = scrollProgress * 15;
+
+  return (
+    <div className="hackathon-scene-wrapper" style={{ perspective: `${perspective}px` }}>
+      <div 
+        className="hackathon-scene" 
+        ref={sceneRef}
+        style={{ 
+          transform: `rotateY(${rotateY}deg) translateZ(${scrollProgress * 100}px)`
+        }}
+      >
+        {/* HUD Overlay - First Person View */}
+        <div className="hud-overlay">
+          <div className="hud-top-left">
+            <pre className="hud-stats">
+{`╔════════════════════════╗
+║ HACKATHON STATUS       ║
+╠════════════════════════╣
+║ Time: ${time} AM       ║
+║ Energy: ▓▓▓▓▓░░░ 65%  ║
+║ Focus:  ▓▓▓▓▓▓░░ 75%  ║
+║ Code:   ${codeLines} lines      ║
+╚════════════════════════╝`}
+            </pre>
+          </div>
+          
+          <div className="hud-top-right">
+            <pre className="hud-mission">
+{`╔════════════════════════╗
+║ MISSION OBJECTIVES     ║
+╠════════════════════════╣
+║ [✓] Setup Project      ║
+║ [✓] Design UI          ║
+║ [~] Implement Features ║
+║ [ ] Test & Debug       ║
+║ [ ] Deploy & Submit    ║
+╚════════════════════════╝`}
+            </pre>
+          </div>
+        </div>
+
+        {/* POV: Your Desk - Center Focus */}
+        <div className="scene-section pov-desk">
+          <pre className="your-laptop">
+{`
+                    ╔═══════════════════════════════════════════════════════════════╗
+                    ║  ┌─┐ ┌─┐ ┌─┐                    HACKITALL IDE           × □ ─ ║
+                    ║  └─┘ └─┘ └─┘                                                  ║
+                    ╠═══════════════════════════════════════════════════════════════╣
+                    ║  File  Edit  View  Terminal  Help                            ║
+                    ╠═══════════════════════════════════════════════════════════════╣
+                    ║                                                               ║
+                    ║  1  import React from 'react';                               ║
+                    ║  2  import { useState } from 'react';                        ║
+                    ║  3                                                            ║
+                    ║  4  function HackathonProject() {                            ║
+                    ║  5    const [ideas, setIdeas] = useState([]);                ║
+                    ║  6    const [coffee, setCoffee] = useState(5);               ║
+                    ║  7                                                            ║
+                    ║  8    // TODO: Implement the magic                           ║
+                    ║  9    const buildAwesomeProject = () => {                    ║
+                    ║ 10      return "🚀 Innovation!";                             ║
+                    ║ 11    }${blinkCursor ? '█' : ' '}                                                          ║
+                    ║ 12                                                            ║
+                    ║ 13    return <div>Building...</div>                          ║
+                    ║ 14  }                                                         ║
+                    ║ 15                                                            ║
+                    ║                                                               ║
+                    ╠═══════════════════════════════════════════════════════════════╣
+                    ║ > npm run dev                                                 ║
+                    ║ > Server running on http://localhost:3000                    ║
+                    ║ > Compiled successfully!                                      ║
+                    ╚═══════════════════════════════════════════════════════════════╝
+                    ║▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓║
+                    ╚═══════════════════════════════════════════════════════════════╝
+`}
+          </pre>
+
+          {/* Coffee Cup - Left Side */}
+          <pre className="coffee-cup-left">
+{`
+        ╔═══════╗
+        ║       ║
+        ║ ☕ HOT║
+        ║       ║
+        ║ COFFEE║
+        ╚═══════╝
+         ║     ║
+         ╚═════╝
+        (  ) (  )
+         ╲   ╱
+          ╲ ╱
+           ║
+`}
+          </pre>
+
+          {/* Notebook - Right Side */}
+          <pre className="notebook-right">
+{`
+    ╔═══════════════╗
+    ║ NOTES & IDEAS ║
+    ╠═══════════════╣
+    ║ • API design  ║
+    ║ • User auth   ║
+    ║ • Database    ║
+    ║ • Deploy?     ║
+    ║               ║
+    ║ [SKETCH]      ║
+    ║  ┌──┐  ┌──┐  ║
+    ║  │UI│─→│DB│  ║
+    ║  └──┘  └──┘  ║
+    ╚═══════════════╝
+`}
+          </pre>
+
+          {/* Phone with Notifications */}
+          <pre className="phone-device">
+{`
+    ┌─────────┐
+    │  ◯ ◯ ◯  │
+    ├─────────┤
+    │ 3 NEW   │
+    │ MSGS    │
+    │         │
+    │ Team:   │
+    │ "Status?│
+    │         │
+    │ Mom:    │
+    │ "Sleep?"│
+    │         │
+    ├─────────┤
+    │    ▓    │
+    └─────────┘
+`}
+          </pre>
+        </div>
+
+        {/* POV: Looking Around - Teammates */}
+        <div className="scene-section teammates-area">
+          <pre className="teammate teammate-left">
+{`
+    ╔═══════════════════════════╗
+    ║  TEAMMATE #1 - "ALEX"     ║
+    ╠═══════════════════════════╣
+    ║                           ║
+    ║        ┌─────┐            ║
+    ║        │ o o │            ║
+    ║        │  ▽  │            ║
+    ║        └─────┘            ║
+    ║          │││              ║
+    ║         ╱│││╲             ║
+    ║        ╱ │││ ╲            ║
+    ║                           ║
+    ║   ┌─────────────────┐    ║
+    ║   │ [LAPTOP SCREEN] │    ║
+    ║   │ > git push      │    ║
+    ║   │ > Deploying...  │    ║
+    ║   └─────────────────┘    ║
+    ║                           ║
+    ║   Status: FOCUSED         ║
+    ║   Task: Backend API       ║
+    ╚═══════════════════════════╝
+`}
+          </pre>
+
+          <pre className="teammate teammate-center">
+{`
+    ╔═══════════════════════════╗
+    ║  TEAMMATE #2 - "SARAH"    ║
+    ╠═══════════════════════════╣
+    ║                           ║
+    ║        ┌─────┐            ║
+    ║        │ ^ ^ │            ║
+    ║        │  ◡  │            ║
+    ║        └─────┘            ║
+    ║          │││              ║
+    ║         ╱│││╲             ║
+    ║        ╱ │││ ╲            ║
+    ║                           ║
+    ║   ┌─────────────────┐    ║
+    ║   │ [LAPTOP SCREEN] │    ║
+    ║   │ > npm test      │    ║
+    ║   │ ✓ All passed!   │    ║
+    ║   └─────────────────┘    ║
+    ║                           ║
+    ║   Status: HAPPY           ║
+    ║   Task: Testing           ║
+    ╚═══════════════════════════╝
+`}
+          </pre>
+
+          <pre className="teammate teammate-right">
+{`
+    ╔═══════════════════════════╗
+    ║  TEAMMATE #3 - "MIKE"     ║
+    ╠═══════════════════════════╣
+    ║                           ║
+    ║        ┌─────┐            ║
+    ║        │ @ @ │            ║
+    ║        │  ~  │            ║
+    ║        └─────┘            ║
+    ║          │││              ║
+    ║         ╱│││╲             ║
+    ║        ╱ │││ ╲            ║
+    ║                           ║
+    ║   ┌─────────────────┐    ║
+    ║   │ [LAPTOP SCREEN] │    ║
+    ║   │ ERROR: Line 42  │    ║
+    ║   │ > Debugging...  │    ║
+    ║   └─────────────────┘    ║
+    ║                           ║
+    ║   Status: DEBUGGING       ║
+    ║   Task: Fix Bug           ║
+    ╚═══════════════════════════╝
+`}
+          </pre>
+        </div>
+
+        {/* POV: Looking Up - Whiteboard */}
+        <div className="scene-section whiteboard-area">
+          <pre className="whiteboard-large">
+{`
+    ╔═══════════════════════════════════════════════════════════════════════╗
+    ║                                                                       ║
+    ║              ██╗  ██╗ █████╗  ██████╗██╗  ██╗██╗████████╗           ║
+    ║              ██║  ██║██╔══██╗██╔════╝██║ ██╔╝██║╚══██╔══╝           ║
+    ║              ███████║███████║██║     █████╔╝ ██║   ██║              ║
+    ║              ██╔══██║██╔══██║██║     ██╔═██╗ ██║   ██║              ║
+    ║              ██║  ██║██║  ██║╚██████╗██║  ██╗██║   ██║              ║
+    ║              ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝   ╚═╝              ║
+    ║                                                                       ║
+    ║  ═══════════════════════════════════════════════════════════════════ ║
+    ║                                                                       ║
+    ║                    SYSTEM ARCHITECTURE                               ║
+    ║                                                                       ║
+    ║         ┌──────────────┐         ┌──────────────┐                   ║
+    ║         │   FRONTEND   │────────→│   BACKEND    │                   ║
+    ║         │   React UI   │         │   Node API   │                   ║
+    ║         └──────────────┘         └──────────────┘                   ║
+    ║                │                         │                           ║
+    ║                │                         ↓                           ║
+    ║                │                  ┌──────────────┐                   ║
+    ║                │                  │   DATABASE   │                   ║
+    ║                │                  │   MongoDB    │                   ║
+    ║                │                  └──────────────┘                   ║
+    ║                │                         │                           ║
+    ║                └─────────────────────────┘                           ║
+    ║                                                                       ║
+    ║  ═══════════════════════════════════════════════════════════════════ ║
+    ║                                                                       ║
+    ║   SPRINT TASKS:                    TIME REMAINING: 3:47:23           ║
+    ║                                                                       ║
+    ║   [████████████████░░░░] 80%  Complete                               ║
+    ║                                                                       ║
+    ║   ✓ Setup project structure                                          ║
+    ║   ✓ Design database schema                                           ║
+    ║   ✓ Implement authentication                                         ║
+    ║   ✓ Build core features                                              ║
+    ║   ▶ Testing & debugging                                              ║
+    ║   ☐ Deploy to production                                             ║
+    ║   ☐ Prepare presentation                                             ║
+    ║                                                                       ║
+    ╚═══════════════════════════════════════════════════════════════════════╝
+`}
+          </pre>
+        </div>
+
+        {/* POV: Looking Right - Food Table */}
+        <div className="scene-section food-area">
+          <pre className="food-table-large">
+{`
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║                    FUEL STATION                               ║
+    ║                  "KEEP CODING FUEL"                           ║
+    ╚═══════════════════════════════════════════════════════════════╝
+
+         ENERGY DRINKS:                    COFFEE STATION:
+                                          
+      ┌───────┐  ┌───────┐              ╔═══════════════╗
+      │ RED   │  │ MON   │              ║  ╔═══════╗    ║
+      │ BULL  │  │ STER  │              ║  ║ BREW  ║    ║
+      │ ▓▓▓▓▓ │  │ ▓▓▓▓▓ │              ║  ║ ▓▓▓▓▓ ║    ║
+      │ ▓▓▓▓▓ │  │ ▓▓▓▓▓ │              ║  ║ ▓▓▓▓▓ ║    ║
+      └───────┘  └───────┘              ║  ╚═══════╝    ║
+                                        ║                ║
+      ┌───────┐  ┌───────┐              ║  [  START  ]  ║
+      │ RED   │  │ MON   │              ╚═══════════════╝
+      │ BULL  │  │ STER  │              
+      │ ▓▓▓▓▓ │  │ ▓▓▓▓▓ │                  ╱│╲
+      │ ▓▓▓▓▓ │  │ ▓▓▓▓▓ │                 ╱ │ ╲
+      └───────┘  └───────┘                ╱  │  ╲
+                                         ╱   │   ╲
+                                        ╱    │    ╲
+         PIZZA BOXES:                  ╱═════════════╲
+                                      │   COFFEE CUP  │
+      ╔═══════════════════╗           │   ▓▓▓▓▓▓▓▓▓   │
+      ║   PIZZA  HUT      ║           │   ▓▓▓▓▓▓▓▓▓   │
+      ╠═══════════════════╣           └═══════════════┘
+      ║  ╱▔▔▔▔▔▔▔▔▔▔╲   ║
+      ║ │ ◯  ◯  ◯  ◯ │  ║              SNACK BOXES:
+      ║ │ ◯  ◯  ◯  ◯ │  ║           
+      ║  ╲__________╱   ║           ┌─────┐ ┌─────┐
+      ╚═══════════════════╝           │CHIP │ │CHIP │
+                                      │ ▓▓▓ │ │ ▓▓▓ │
+      ╔═══════════════════╗           └─────┘ └─────┘
+      ║   DOMINOS         ║           
+      ╠═══════════════════╣           ┌─────┐ ┌─────┐
+      ║  ╱▔▔▔▔▔▔▔▔▔▔╲   ║           │COOK │ │COOK │
+      ║ │ ◯  ◯  ◯  ◯ │  ║           │ IE  │ │ IE  │
+      ║ │ ◯  ◯  ◯  ◯ │  ║           └─────┘ └─────┘
+      ║  ╲__________╱   ║
+      ╚═══════════════════╝
+`}
+          </pre>
+        </div>
+
+        {/* POV: Looking at Stage - Presentation */}
+        <div className="scene-section stage-area">
+          <pre className="stage-large">
+{`
+    ╔═══════════════════════════════════════════════════════════════════════╗
+    ║                                                                       ║
+    ║              ██╗  ██╗ █████╗  ██████╗██╗  ██╗██╗████████╗           ║
+    ║              ██║  ██║██╔══██╗██╔════╝██║ ██╔╝██║╚══██╔══╝           ║
+    ║              ███████║███████║██║     █████╔╝ ██║   ██║              ║
+    ║              ██╔══██║██╔══██║██║     ██╔═██╗ ██║   ██║              ║
+    ║              ██║  ██║██║  ██║╚██████╗██║  ██╗██║   ██║              ║
+    ║              ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝   ╚═╝              ║
+    ║                                                                       ║
+    ║                         2 0 2 4                                      ║
+    ║                                                                       ║
+    ╚═══════════════════════════════════════════════════════════════════════╝
+    ║                                                                       ║
+    ║   ┌─────────────┐                              ┌─────────────┐      ║
+    ║   │   SPEAKER   │                              │   SPEAKER   │      ║
+    ║   │   ╔═══╗     │                              │   ╔═══╗     │      ║
+    ║   │   ║ ♪ ║     │                              │   ║ ♪ ║     │      ║
+    ║   │   ╚═══╝     │                              │   ╚═══╝     │      ║
+    ║   └─────────────┘                              └─────────────┘      ║
+    ║                                                                       ║
+    ╚═══════════════════════════════════════════════════════════════════════╝
+              │││││││││││││││││││││││││││││││││││││││
+         ─────┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴┴─────
+        ╱                                                 ╲
+       ╱                                                   ╲
+      ╱                  MAIN STAGE                         ╲
+     ╱                                                       ╲
+    ╱                 PRESENTATION AREA                      ╲
+   ╱_________________________________________________________╲
+   
+                        ┌─────────┐
+                        │ ┌─────┐ │
+                        │ │ o o │ │
+                        │ │  ▽  │ │
+                        │ └─────┘ │
+                        │   │││   │
+                        │  ╱│││╲  │
+                        │ ╱ │││ ╲ │
+                        └─────────┘
+                      [HOST SPEAKING]
+                      "Welcome hackers!"
+                      
+                      
+      ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐  ┌─────┐
+      │ o o │  │ ^ ^ │  │ o o │  │ - - │  │ o o │  │ ^ ^ │  │ o o │
+      │  ▽  │  │  ◡  │  │  ▽  │  │  ▽  │  │  ▽  │  │  ◡  │  │  ▽  │
+      └─────┘  └─────┘  └─────┘  └─────┘  └─────┘  └─────┘  └─────┘
+        │││      │││      │││      │││      │││      │││      │││
+       ╱│││╲    ╱│││╲    ╱│││╲    ╱│││╲    ╱│││╲    ╱│││╲    ╱│││╲
+      ╱ │││ ╲  ╱ │││ ╲  ╱ │││ ╲  ╱ │││ ╲  ╱ │││ ╲  ╱ │││ ╲  ╱ │││ ╲
+                        [AUDIENCE WATCHING]
+`}
+          </pre>
+        </div>
+
+        {/* POV: Looking Behind - Sleep Zone */}
+        <div className="scene-section sleep-area">
+          <pre className="sleep-zone-large">
+{`
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║              POWER NAP ZONE - "RECHARGE STATION"              ║
+    ╚═══════════════════════════════════════════════════════════════╝
+
+              BEANBAG #1:                    BEANBAG #2:
+              
+         zzZ    zzZ    zzZ              zzZ    zzZ    zzZ
+           ╲    │    ╱                    ╲    │    ╱
+            ╲   │   ╱                      ╲   │   ╱
+             ╲  │  ╱                        ╲  │  ╱
+              ╲ │ ╱                          ╲ │ ╱
+               ╲│╱                            ╲│╱
+            ┌───────┐                      ┌───────┐
+            │ -  -  │                      │ -  -  │
+            │   ▽   │                      │   ▽   │
+            └───────┘                      └───────┘
+               │││                            │││
+              ╱│││╲                          ╱│││╲
+             ╱ │││ ╲                        ╱ │││ ╲
+            ╱  │││  ╲                      ╱  │││  ╲
+           ╱   │││   ╲                    ╱   │││   ╲
+          
+      ╔═══════════════════╗          ╔═══════════════════╗
+      ║                   ║          ║                   ║
+      ║   BEANBAG CHAIR   ║          ║   BEANBAG CHAIR   ║
+      ║   ▓▓▓▓▓▓▓▓▓▓▓▓▓   ║          ║   ▓▓▓▓▓▓▓▓▓▓▓▓▓   ║
+      ║   ▓▓▓▓▓▓▓▓▓▓▓▓▓   ║          ║   ▓▓▓▓▓▓▓▓▓▓▓▓▓   ║
+      ╚═══════════════════╝          ╚═══════════════════╝
+
+
+              FLOOR SLEEPER:                 ALARM CLOCK:
+              
+         zzZ    zzZ    zzZ                  ┌─────────┐
+           ╲    │    ╱                      │  ┌───┐  │
+            ╲   │   ╱                       │  │ ◯ │  │
+             ╲  │  ╱                        │  └───┘  │
+              ╲ │ ╱                         │         │
+               ╲│╱                          │  03:47  │
+            ┌───────┐                       │         │
+            │ -  -  │                       │ [SNOOZE]│
+            │   ~   │                       └─────────┘
+            └───────┘                       
+               │││                          SET: 30 MIN
+              ╱│││╲                         
+             ╱ │││ ╲                        
+      ═══════════════════════
+      ║  FLOOR  ║  FLOOR  ║
+      ═══════════════════════
+`}
+          </pre>
+        </div>
+
+        {/* Atmosphere Elements - Floating Around */}
+        <div className="scene-section atmosphere">
+          <pre className="wifi-signals-large">
+{`
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║                    NETWORK STATUS                             ║
+    ╚═══════════════════════════════════════════════════════════════╝
+    
+              WiFi Signal Strength:
+              
+         )))))))))))        )))))))))))        )))))))))))
+        )))))))))))        )))))))))))        )))))))))))
+       )))))))))))        )))))))))))        )))))))))))
+      )))))))))))        )))))))))))        )))))))))))
+     )))))))))))        )))))))))))        )))))))))))
+        ║  ║  ║            ║  ║  ║            ║  ║  ║
+        ║  ║  ║            ║  ║  ║            ║  ║  ║
+        ╚══╩══╝            ╚══╩══╝            ╚══╩══╝
+        
+      ┌─────────┐        ┌─────────┐        ┌─────────┐
+      │ ROUTER  │        │ ROUTER  │        │ ROUTER  │
+      │  ▓▓▓▓▓  │        │  ▓▓▓▓▓  │        │  ▓▓▓▓▓  │
+      └─────────┘        └─────────┘        └─────────┘
+      
+      SIGNAL: STRONG     SIGNAL: STRONG     SIGNAL: STRONG
+      SPEED: 1000 Mbps   SPEED: 1000 Mbps   SPEED: 1000 Mbps
+`}
+          </pre>
+
+          <pre className="sticky-notes-large">
+{`
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║                    IDEA WALL                                  ║
+    ╚═══════════════════════════════════════════════════════════════╝
+    
+      ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐
+      │   TODO    │  │   BUG!    │  │   IDEA!   │  │   HELP    │
+      │           │  │           │  │           │  │           │
+      │ • Fix API │  │ Line 42   │  │ Add AI    │  │ Need DB   │
+      │ • Test UI │  │ TypeError │  │ feature   │  │ expert    │
+      │ • Deploy  │  │ URGENT!   │  │ ML model  │  │ ASAP!     │
+      └───────────┘  └───────────┘  └───────────┘  └───────────┘
+      
+      ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐
+      │   DONE!   │  │   TEST    │  │  REVIEW   │  │   MERGE   │
+      │           │  │           │  │           │  │           │
+      │ ✓ Auth    │  │ Unit test │  │ Code      │  │ PR #42    │
+      │ ✓ DB      │  │ E2E test  │  │ review    │  │ Approved  │
+      │ ✓ UI      │  │ Coverage  │  │ needed    │  │ Ready!    │
+      └───────────┘  └───────────┘  └───────────┘  └───────────┘
+`}
+          </pre>
+
+          <pre className="cables-large">
+{`
+    Cables & Wires Everywhere:
+    
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~
+    ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~
+      ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~
+    ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~
+      ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~  ~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    Power Strips:
+    
+    ┌─────────────────────────────────────────────────────────────┐
+    │ ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯  ◯ │
+    └─────────────────────────────────────────────────────────────┘
+                              ║
+                              ║
+                              ║
+`}
+          </pre>
+        </div>
+
+        {/* Victory Section */}
+        <div className="scene-section victory-area">
+          <pre className="celebration">
+{`
+   ✨  *  ✨  *  ✨  *  ✨
+       
+   ╔═══════════════════╗
+   ║   SUBMISSION      ║
+   ║   COMPLETE! 🎉    ║
+   ╚═══════════════════╝
+   
+   ✨  *  ✨  *  ✨  *  ✨
+   
+      👤  👤  👤  👤
+      ╲│╱ ╲│╱ ╲│╱ ╲│╱
+       🎊  🎉  🎊  🎉
+       
+   "WE DID IT!"
+   "HIGH FIVE!"
+   "DEMO TIME!"
+   
+   🏆 PROJECT SUBMITTED 🏆
+   
+   ✨  *  ✨  *  ✨  *  ✨
+`}
+          </pre>
+        </div>
+      </div>
+
+      {/* Floating Elements */}
+      <div className="floating-elements">
+        <div className="float-item notification-1">
+          <pre>
+{`┌──────────────┐
+│ 📧 New Email │
+└──────────────┘`}
+          </pre>
+        </div>
+        <div className="float-item notification-2">
+          <pre>
+{`┌──────────────┐
+│ ⚠️ Deadline! │
+└──────────────┘`}
+          </pre>
+        </div>
+        <div className="float-item notification-3">
+          <pre>
+{`┌──────────────┐
+│ ✅ Build OK  │
+└──────────────┘`}
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+}
