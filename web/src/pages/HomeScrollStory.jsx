@@ -226,9 +226,14 @@ const sampleEvents = [
 export default function HomeScrollStory() {
   const [trackLink, setTrackLink] = useState('');
   const [events, setEvents] = useState(sampleEvents);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const containerRef = useRef(null);
   const eventsScrollRef = useRef(null);
+
+  useEffect(() => {
+    setIsAuthenticated(!!localStorage.getItem('authToken'));
+  }, []);
 
   const { scrollYProgress } = useScroll();
   const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
@@ -296,9 +301,15 @@ export default function HomeScrollStory() {
           <span>HACKITALL</span>
         </Link>
         <div className="hia-nav-links">
-          <Link to="/opportunities" className="hia-nav-link">Explore</Link>
-          <Link to="/login" className="hia-nav-link">Sign In</Link>
-          <Link to="/register" className="hia-nav-link hia-nav-cta">Get Started</Link>
+          <Link to="/discover" className="hia-nav-link">Explore</Link>
+          {isAuthenticated ? (
+            <Link to="/profile" className="hia-nav-link hia-nav-cta">Profile</Link>
+          ) : (
+            <>
+              <Link to="/login" className="hia-nav-link">Sign In</Link>
+              <Link to="/register" className="hia-nav-link hia-nav-cta">Get Started</Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -594,12 +605,12 @@ export default function HomeScrollStory() {
           </div>
 
           <div className="tracking-cta-buttons">
-            <Link to="/register" className="hia-btn hia-btn-primary">
-              Start Tracking Free
+            <Link to="/discover" className="hia-btn hia-btn-primary">
+              Enter Platform
               <span className="btn-glow" />
             </Link>
-            <Link to="/opportunities" className="hia-btn hia-btn-ghost">
-              Browse Events →
+            <Link to="/login" className="hia-btn hia-btn-ghost">
+              Sign In →
             </Link>
           </div>
         </motion.div>
@@ -642,12 +653,12 @@ export default function HomeScrollStory() {
             Join thousands of students who discovered their next hackathon, scholarship, or internship through HackItAll.
           </p>
           <div className="final-cta-buttons">
-            <Link to="/opportunities" className="hia-btn hia-btn-primary hia-btn-lg">
-              Explore Opportunities
+            <Link to="/discover" className="hia-btn hia-btn-primary hia-btn-lg">
+              Enter Platform
               <span className="btn-glow" />
             </Link>
-            <Link to="/register" className="hia-btn hia-btn-ghost hia-btn-lg">
-              Create Free Account →
+            <Link to="/login" className="hia-btn hia-btn-ghost hia-btn-lg">
+              Sign In to Account →
             </Link>
           </div>
         </motion.div>

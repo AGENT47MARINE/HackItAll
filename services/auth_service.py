@@ -112,3 +112,14 @@ class AuthService:
             User object if found, None otherwise
         """
         return self.db.query(User).filter(User.id == user_id).first()
+    
+    def get_user_by_email(self, email: str) -> Optional[User]:
+        """Get a user by email.
+        
+        Args:
+            email: User email
+            
+        Returns:
+            User object if found, None otherwise
+        """
+        return self.db.query(User).filter(User.email == email).first()

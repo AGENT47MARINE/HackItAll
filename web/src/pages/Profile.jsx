@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
+import GridBackground from '../components/GridBackground';
+import PixelLogo from '../components/PixelLogo';
 import './Pages.css';
 
 export default function Profile() {
@@ -22,72 +24,138 @@ export default function Profile() {
   };
 
   if (loading) {
-    return <div className="loading">Loading profile...</div>;
+    return (
+      <div className="profile-page">
+        <GridBackground />
+        <div className="profile-content">
+          <div className="loading-modern">
+            <div className="loading-spinner-modern"></div>
+            <p>Loading profile...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!profile) {
-    return <div className="empty-state"><h2>Failed to load profile</h2></div>;
+    return (
+      <div className="profile-page">
+        <GridBackground />
+        <div className="profile-content">
+          <div className="empty-state-modern">
+            <div className="empty-icon">◇</div>
+            <h2>Failed to load profile</h2>
+            <p>Please try again later</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="profile-container">
-      <div className="profile-header">
-        <div className="profile-avatar">
-          {profile.email.charAt(0).toUpperCase()}
-        </div>
-        <h1>{profile.email}</h1>
-      </div>
+    <div className="profile-page">
+      <GridBackground />
 
-      <div className="profile-section">
-        <h2>Education</h2>
-        <p>{profile.education_level}</p>
-      </div>
 
-      {profile.interests && profile.interests.length > 0 && (
-        <div className="profile-section">
-          <h2>Interests</h2>
-          <div className="tags-list">
-            {profile.interests.map((interest, index) => (
-              <span key={index} className="tag">{interest}</span>
-            ))}
+      <div className="profile-content">
+        {/* Header */}
+        <div className="profile-header-modern">
+          <div className="profile-avatar-modern">
+            {profile.email.charAt(0).toUpperCase()}
           </div>
+          <h1 className="profile-title">{profile.email}</h1>
+          <p className="profile-subtitle">Member since {new Date(profile.created_at).toLocaleDateString()}</p>
+          {profile.activity_streak !== undefined && (
+            <div className="profile-streak-badge">
+              🔥 {profile.activity_streak} Week Streak
+            </div>
+          )}
         </div>
-      )}
 
-      {profile.skills && profile.skills.length > 0 && (
-        <div className="profile-section">
-          <h2>Skills</h2>
-          <div className="tags-list">
-            {profile.skills.map((skill, index) => (
-              <span key={index} className="tag">{skill}</span>
-            ))}
+        {/* Profile Grid */}
+        <div className="profile-grid">
+          {/* Education Section */}
+          <div className="profile-card">
+            <div className="profile-card-header">
+              <span className="profile-icon">🎓</span>
+              <h2>Education</h2>
+            </div>
+            <div className="profile-card-content">
+              <p className="profile-value-large">{profile.education_level}</p>
+            </div>
           </div>
-        </div>
-      )}
 
-      <div className="profile-section">
-        <h2>Notifications</h2>
-        <div className="profile-row">
-          <span>Email Notifications</span>
-          <span className="profile-value">
-            {profile.notification_email ? 'Enabled' : 'Disabled'}
-          </span>
-        </div>
-        <div className="profile-row">
-          <span>SMS Notifications</span>
-          <span className="profile-value">
-            {profile.notification_sms ? 'Enabled' : 'Disabled'}
-          </span>
-        </div>
-      </div>
+          {/* Interests Section */}
+          {profile.interests && profile.interests.length > 0 && (
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <span className="profile-icon">💡</span>
+                <h2>Interests</h2>
+              </div>
+              <div className="profile-card-content">
+                <div className="tags-list-modern">
+                  {profile.interests.map((interest, index) => (
+                    <span key={index} className="tag-modern">{interest}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
-      <div className="profile-section">
-        <h2>Preferences</h2>
-        <div className="profile-row">
-          <span>Low Bandwidth Mode</span>
-          <span className="profile-value">
-            {profile.low_bandwidth_mode ? 'Enabled' : 'Disabled'}
-          </span>
+          {/* Skills Section */}
+          {profile.skills && profile.skills.length > 0 && (
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <span className="profile-icon">⚡</span>
+                <h2>Skills</h2>
+              </div>
+              <div className="profile-card-content">
+                <div className="tags-list-modern">
+                  {profile.skills.map((skill, index) => (
+                    <span key={index} className="tag-modern">{skill}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Notifications Section */}
+          <div className="profile-card">
+            <div className="profile-card-header">
+              <span className="profile-icon">🔔</span>
+              <h2>Notifications</h2>
+            </div>
+            <div className="profile-card-content">
+              <div className="profile-row-modern">
+                <span>Email Notifications</span>
+                <span className={`profile-badge ${profile.notification_email ? 'active' : ''}`}>
+                  {profile.notification_email ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+              <div className="profile-row-modern">
+                <span>SMS Notifications</span>
+                <span className={`profile-badge ${profile.notification_sms ? 'active' : ''}`}>
+                  {profile.notification_sms ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Preferences Section */}
+          <div className="profile-card">
+            <div className="profile-card-header">
+              <span className="profile-icon">⚙️</span>
+              <h2>Preferences</h2>
+            </div>
+            <div className="profile-card-content">
+              <div className="profile-row-modern">
+                <span>Low Bandwidth Mode</span>
+                <span className={`profile-badge ${profile.low_bandwidth_mode ? 'active' : ''}`}>
+                  {profile.low_bandwidth_mode ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

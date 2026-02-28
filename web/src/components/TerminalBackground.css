@@ -23,11 +23,12 @@
 }
 
 /* Primary terminal — large, center-ish */
-.terminal-bg-window:not(.terminal-bg-secondary):not(.terminal-bg-tertiary) {
-    top: 8%;
-    left: 5%;
-    width: 55%;
-    max-width: 680px;
+.terminal-bg-window:not(.terminal-bg-secondary):not(.terminal-bg-tertiary):not(.terminal-bg-quaternary) {
+    top: 5%;
+    left: 2%;
+    width: 75%;
+    max-width: 900px;
+    font-size: 1.1em;
     animation: float-terminal-1 12s ease-in-out infinite;
 }
 
@@ -44,11 +45,24 @@
 /* Tertiary terminal — smallest, left-bottom area */
 .terminal-bg-tertiary {
     bottom: 5%;
-    left: 8%;
+    left: 1%;
     width: 26%;
     max-width: 300px;
     opacity: 0.35;
     animation: float-terminal-3 18s ease-in-out infinite;
+}
+
+/* Quaternary terminal — Notification window, right-top */
+.terminal-bg-quaternary {
+    top: 15%;
+    right: 2%;
+    width: 25%;
+    max-width: 280px;
+    opacity: 0.8;
+    background: rgba(5, 5, 8, 0.75);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    box-shadow: 0 8px 40px rgba(0, 240, 255, 0.05);
+    animation: float-terminal-4 10s ease-in-out infinite;
 }
 
 @keyframes float-terminal-1 {
@@ -88,6 +102,18 @@
 
     50% {
         transform: translateY(8px) rotate(-0.5deg);
+    }
+}
+
+@keyframes float-terminal-4 {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(-0.5deg);
+    }
+
+    50% {
+        transform: translateY(5px) rotate(0.5deg);
     }
 }
 
@@ -135,9 +161,13 @@
 
 .terminal-bg-line {
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.72em;
     line-height: 1.65;
-    white-space: pre;
+    white-space: pre-wrap;
+    word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     animation: fadein-line 0.15s ease-out;
 }
 

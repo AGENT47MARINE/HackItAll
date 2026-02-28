@@ -24,10 +24,12 @@ class OpportunityResponse(BaseModel):
     type: str
     deadline: str
     application_link: str
+    image_url: Optional[str] = None
     tags: List[str]
     required_skills: List[str]
     eligibility: Optional[str]
     status: str
+    tracked_count: int = 0
     created_at: str
     updated_at: str
 
@@ -60,6 +62,23 @@ class RecommendationResponse(BaseModel):
     """Response model for recommendations."""
     opportunity: OpportunityResponse
     relevance_score: float
+
+
+class SkillGapAnalysisResponse(BaseModel):
+    """Response model for Am I Ready skill gap analysis."""
+    is_ready: bool
+    matching_skills: List[str]
+    missing_skills: List[str]
+    recommendation_text: str
+
+
+class ProjectIdea(BaseModel):
+    title: str
+    description: str
+
+class ProjectIdeasResponse(BaseModel):
+    """Response model for project ideas."""
+    ideas: List[ProjectIdea]
 
 
 # Public Endpoints
@@ -108,6 +127,28 @@ async def search_opportunities(
     return [OpportunityResponse(**opp) for opp in opportunities]
 
 
+@router.get("/opportunities/trending", response_model=List[OpportunityResponse])
+async def get_trending_opportunities(
+    limit: int = Query(default=5, ge=1, le=20, description="Maximum number of trending opportunities to return"),
+    db: Session = Depends(get_db)
+):
+    """Get trending opportunities based on tracking activity.
+    
+    Returns opportunities sorted by the number of users who have tracked them.
+    
+    Args:
+        limit: Maximum number of opportunities to return
+        db: Database session
+        
+    Returns:
+        List of trending opportunities
+    """
+    opportunity_service = OpportunityService(db)
+    trending_opportunities = opportunity_service.get_trending(limit=limit)
+    
+    return [OpportunityResponse(**opp) for opp in trending_opportunities]
+
+
 @router.get("/opportunities/{opportunity_id}", response_model=OpportunityResponse)
 async def get_opportunity(
     opportunity_id: str,
@@ -126,7 +167,6 @@ async def get_opportunity(
         HTTPException: If opportunity not found
     """
     opportunity_service = OpportunityService(db)
-    
     opportunity = opportunity_service.get_opportunity(opportunity_id)
     
     if not opportunity:
@@ -138,6 +178,62 @@ async def get_opportunity(
     return OpportunityResponse(**opportunity)
 
 
+@router.get("/opportunities/{opportunity_id}/analyze-fit", response_model=SkillGapAnalysisResponse)
+async def analyze_opportunity_fit(
+    opportunity_id: str,
+    current_user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Analyze the user's fit for a specific opportunity ('Am I Ready?' feature).
+    
+    Args:
+        opportunity_id: Opportunity ID
+        current_user_id: Current user ID from authentication token
+        db: Database session
+        
+    Returns:
+        Skill gap analysis response
+    """
+    # 1. Get User Profile
+    from models.user import Profile
+    profile = db.query(Profile).filter(Profile.user_id == current_user_id).first()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User profile not found")
+
+    # 2. Get Opportunity
+    from models.opportunity import Opportunity
+    opportunity = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
+    if not opportunity:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found")
+
+    # 3. Trigger AI Analysis
+    engine = RecommendationEngine(db)
+    analysis = engine.analyze_skill_gap(profile, opportunity)
+    
+    return SkillGapAnalysisResponse(**analysis)
+
+
+@router.get("/opportunities/{opportunity_id}/ideas", response_model=ProjectIdeasResponse)
+async def get_project_ideas(
+    opportunity_id: str,
+    current_user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Generate dynamic AI project ideas for an opportunity."""
+    from models.user import Profile
+    profile = db.query(Profile).filter(Profile.user_id == current_user_id).first()
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User profile not found")
+
+    from models.opportunity import Opportunity
+    opportunity = db.query(Opportunity).filter(Opportunity.id == opportunity_id).first()
+    if not opportunity:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found")
+
+    engine = RecommendationEngine(db)
+    ideas = engine.generate_project_ideas(profile, opportunity)
+    
+    return {"ideas": ideas}
 @router.get("/recommendations", response_model=List[RecommendationResponse])
 async def get_recommendations(
     limit: int = Query(default=10, ge=1, le=50, description="Maximum number of recommendations"),
@@ -181,6 +277,60 @@ async def get_recommendations(
         )
     
     return recommendations
+
+
+class ScrapeRequest(BaseModel):
+    url: str = Field(..., min_length=1, description="URL of the hackathon to scrape")
+
+@router.post("/opportunities/scrape", response_model=OpportunityResponse)
+async def scrape_opportunity(
+    request: ScrapeRequest,
+    current_user_id: str = Depends(get_current_user), # Allow users to submit hackathons
+    db: Session = Depends(get_db)
+):
+    """
+    Scrapes a hackathon URL dynamically and adds it to the database.
+    """
+    from services.scraper.dispatcher import ScraperDispatcher
+    from datetime import datetime
+    import dateutil.parser
+    
+    dispatcher = ScraperDispatcher()
+    
+    try:
+        # Run Playwright + Ollama
+        extracted_data = dispatcher.execute_scrape(request.url)
+        
+        # Parse the loose date string from AI into a strict datetime
+        deadline_dt = datetime.now()
+        if extracted_data.get("deadline"):
+            try:
+                 deadline_dt = dateutil.parser.parse(extracted_data["deadline"])
+            except:
+                 pass
+                 
+        # Save to DB
+        opportunity_service = OpportunityService(db)
+        opportunity = opportunity_service.create_opportunity(
+            title=extracted_data.get("title", "Unknown Hackathon"),
+            description=extracted_data.get("description", "Scraped opportunity"),
+            opportunity_type=extracted_data.get("type", "hackathon"),
+            deadline=deadline_dt,
+            application_link=extracted_data.get("application_link", request.url),
+            image_url=extracted_data.get("image_url"),
+            tags=extracted_data.get("tags", []),
+            required_skills=extracted_data.get("required_skills", []),
+            eligibility=extracted_data.get("eligibility")
+        )
+        
+        return OpportunityResponse(**opportunity)
+        
+    except Exception as e:
+        print(f"Scraping API Error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to scrape URL: {str(e)}"
+        )
 
 
 # Admin Endpoints

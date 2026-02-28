@@ -48,6 +48,9 @@ export default function Home() {
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
+          <div className="hero-logo-accent">
+            <PixelLogo />
+          </div>
           <h1 className="hero-title">
             Discover Your Next
             <span className="gradient-text"> Opportunity</span>

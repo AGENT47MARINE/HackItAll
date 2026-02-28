@@ -25,11 +25,22 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
 
   return (
     <div className={`opportunity-card ${isExpired ? 'expired' : ''}`}>
+      {opportunity.image_url && (
+        <div className="card-image-container">
+          <img src={opportunity.image_url} alt={opportunity.title} className="card-image" />
+        </div>
+      )}
+
       <div className="card-header">
         <span className="type-badge">{opportunity.type.replace('_', ' ')}</span>
-        {relevanceScore && (
-          <span className="score-badge">{Math.round(relevanceScore * 100)}% match</span>
-        )}
+        <div className="card-header-badges">
+          {opportunity.tracked_count > 0 && (
+            <span className="tracked-badge">🔥 {opportunity.tracked_count}</span>
+          )}
+          {relevanceScore && (
+            <span className="score-badge">{Math.round(relevanceScore * 100)}% match</span>
+          )}
+        </div>
       </div>
 
       <Link to={`/opportunities/${opportunity.id}`} className="card-link">

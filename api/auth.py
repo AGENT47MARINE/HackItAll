@@ -37,6 +37,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class GoogleAuthRequest(BaseModel):
+    """Request model for Google OAuth authentication."""
+    token: str
+    education_level: Optional[str] = None
+    interests: Optional[list[str]] = None
+    skills: Optional[list[str]] = None
+
+
 class TokenResponse(BaseModel):
     """Response model for authentication tokens."""
     access_token: str
@@ -254,6 +262,107 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         user_id=user.id,
         email=user.email
     )
+
+
+@router.post("/google", response_model=TokenResponse)
+async def google_auth(request: GoogleAuthRequest, db: Session = Depends(get_db)):
+    """Authenticate user with Google OAuth token.
+    
+    Args:
+        request: Google auth request with token
+        db: Database session
+        
+    Returns:
+        Access token and user information
+        
+    Raises:
+        HTTPException: If authentication fails
+    """
+    from google.oauth2 import id_token
+    from google.auth.transport import requests
+    import os
+    
+    auth_service = AuthService(db)
+    profile_service = ProfileService(db)
+    
+    try:
+        # Verify Google token
+        google_client_id = os.getenv('GOOGLE_CLIENT_ID')
+        if not google_client_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Google OAuth not configured"
+            )
+        
+        idinfo = id_token.verify_oauth2_token(
+            request.token, 
+            requests.Request(), 
+            google_client_id
+        )
+        
+        # Extract user info from Google token
+        email = idinfo.get('email')
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email not provided by Google"
+            )
+        
+        # Check if user exists
+        user = auth_service.get_user_by_email(email)
+        
+        if user:
+            # User exists, log them in
+            access_token = auth_service.create_access_token(
+                user_id=user.id,
+                email=user.email
+            )
+            
+            return TokenResponse(
+                access_token=access_token,
+                user_id=user.id,
+                email=user.email
+            )
+        else:
+            # New user, create account
+            # For Google OAuth, we'll use a random password since they won't use it
+            import secrets
+            random_password = secrets.token_urlsafe(32)
+            
+            profile_data = profile_service.create_profile(
+                email=email,
+                password=random_password,
+                education_level=request.education_level or "Not specified",
+                interests=request.interests or [],
+                skills=request.skills or [],
+                notification_email=True,
+                notification_sms=False,
+                low_bandwidth_mode=False
+            )
+            
+            # Create access token
+            access_token = auth_service.create_access_token(
+                user_id=profile_data["id"],
+                email=profile_data["email"]
+            )
+            
+            return TokenResponse(
+                access_token=access_token,
+                user_id=profile_data["id"],
+                email=profile_data["email"]
+            )
+            
+    except ValueError as e:
+        # Invalid token
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid Google token: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Google authentication failed: {str(e)}"
+        )
 
 
 @router.get("/me", response_model=UserResponse)

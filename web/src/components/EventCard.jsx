@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { IconBolt, IconGrad, IconBriefcase, IconRocket } from './Icons';
+import './EventCard.css';
 
 const typeColors = {
     hackathon: { accent: '#00f0ff', bg: 'rgba(0, 240, 255, 0.06)', border: 'rgba(0, 240, 255, 0.15)' },

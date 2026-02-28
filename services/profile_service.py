@@ -276,17 +276,108 @@ class ProfileService:
         Returns:
             Dictionary containing formatted user and profile data
         """
+        def safe_json_load(data):
+            if not data: return []
+            try:
+                if isinstance(data, str):
+                    parsed = json.loads(data)
+                    # sometimes it's double serialized
+                    if isinstance(parsed, str):
+                        return json.loads(parsed)
+                    return parsed
+                return data
+            except:
+                return []
+
         return {
             "id": user.id,
             "email": user.email,
             "phone": user.phone,
-            "interests": json.loads(profile.interests),
-            "skills": json.loads(profile.skills),
+            "interests": safe_json_load(profile.interests),
+            "skills": safe_json_load(profile.skills),
             "education_level": profile.education_level,
             "notification_email": profile.notification_email,
             "notification_sms": profile.notification_sms,
             "low_bandwidth_mode": profile.low_bandwidth_mode,
             "created_at": user.created_at.isoformat(),
             "updated_at": profile.updated_at.isoformat(),
-            "participation_history": []  # Empty for now, will be populated later
+            "participation_history": [],  # Empty for now, will be populated later
+            "activity_streak": self._calculate_activity_streak(user.id)
         }
+        
+    def _calculate_activity_streak(self, user_id: str) -> int:
+        """Calculate the consecutive weeks of activity for a user.
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            Number of consecutive active weeks
+        """
+        from models.tracking import TrackedOpportunity, ParticipationHistory
+        from datetime import datetime
+        
+        # Get all activity dates
+        tracked_dates = self.db.query(TrackedOpportunity.saved_at).filter(TrackedOpportunity.user_id == user_id).all()
+        participation_dates = self.db.query(ParticipationHistory.created_at).filter(ParticipationHistory.user_id == user_id).all()
+        
+        # Extract datetime objects from tuples
+        all_dates = [d[0] for d in tracked_dates if d[0]] + [d[0] for d in participation_dates if d[0]]
+        
+        if not all_dates:
+            return 0
+            
+        # Convert dates to ISO year and week strings, e.g., "2024-W15"
+        active_weeks = set()
+        for d in all_dates:
+            year, week, _ = d.isocalendar()
+            active_weeks.add(f"{year}-W{week:02d}")
+            
+        # Get current week and check consecutively backwards
+        current_date = datetime.utcnow()
+        curr_year, curr_week, _ = current_date.isocalendar()
+        
+        streak = 0
+        
+        # The streak can start either this week or the previous week (if they haven't been active *yet* this week)
+        check_year, check_week = curr_year, curr_week
+        
+        # Check this week
+        if f"{curr_year}-W{curr_week:02d}" in active_weeks:
+            streak += 1
+            check_week -= 1
+        elif curr_week == 1:
+            from datetime import date
+            check_year_last = curr_year - 1
+            check_week_last = date(check_year_last, 12, 28).isocalendar()[1]
+            if f"{check_year_last}-W{check_week_last:02d}" in active_weeks:
+                # Active last week of previous year
+                streak += 1
+                check_year = check_year_last
+                check_week = check_week_last - 1
+            else:
+                return 0
+        elif f"{curr_year}-W{curr_week - 1:02d}" in active_weeks:
+            # They were active last week but not this week, so streak is still alive
+            streak += 1
+            check_week -= 2
+        else:
+            return 0
+            
+        # Continue counting backwards
+        while True:
+            # Handle year wrap around logically
+            if check_week <= 0:
+                check_year -= 1
+                from datetime import date
+                check_week = date(check_year, 12, 28).isocalendar()[1]
+                
+            week_str = f"{check_year}-W{check_week:02d}"
+            
+            if week_str in active_weeks:
+                streak += 1
+                check_week -= 1
+            else:
+                break
+                
+        return streak

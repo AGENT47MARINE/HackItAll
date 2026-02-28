@@ -77,13 +77,17 @@ const AsciiBackground = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Initialize particles
-    particles.current = Array.from({ length: 50 }, () => ({
+    // Initialize cursor trail particles
+    particles.current = Array.from({ length: 30 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      char: ['.', '·', '•', '○', '◦', '∘'][Math.floor(Math.random() * 6)],
-      speed: 0.2 + Math.random() * 0.5,
-      opacity: 0.1 + Math.random() * 0.3
+      char: ['█', '▓', '▒', '░'][Math.floor(Math.random() * 4)],
+      speedX: (Math.random() - 0.5) * 1.5, // Horizontal movement
+      speedY: (Math.random() - 0.5) * 1.5, // Vertical movement
+      opacity: 0.3 + Math.random() * 0.4,
+      maxOpacity: 0.3 + Math.random() * 0.4,
+      fadeSpeed: 0.002 + Math.random() * 0.003,
+      trail: [] // Store previous positions for trail effect
     }));
 
     let animationFrame;
@@ -92,17 +96,43 @@ const AsciiBackground = () => {
       ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw floating particles
+      // Draw cursor trail particles
       particles.current.forEach(particle => {
-        ctx.fillStyle = `rgba(255, 255, 255, ${particle.opacity})`;
-        ctx.font = '14px monospace';
+        // Draw the trail (fading previous positions)
+        particle.trail.forEach((pos, index) => {
+          const trailOpacity = (particle.opacity * (index + 1)) / (particle.trail.length + 1);
+          ctx.fillStyle = `rgba(0, 240, 255, ${trailOpacity * 0.3})`;
+          ctx.font = '16px monospace';
+          ctx.fillText(particle.char, pos.x, pos.y);
+        });
+
+        // Draw the main cursor
+        ctx.fillStyle = `rgba(0, 240, 255, ${particle.opacity})`;
+        ctx.font = '16px monospace';
         ctx.fillText(particle.char, particle.x, particle.y);
 
-        particle.y -= particle.speed;
-        if (particle.y < 0) {
-          particle.y = canvas.height;
-          particle.x = Math.random() * canvas.width;
+        // Update trail (keep last 3-5 positions)
+        particle.trail.push({ x: particle.x, y: particle.y });
+        if (particle.trail.length > 4) {
+          particle.trail.shift();
         }
+
+        // Move particle
+        particle.x += particle.speedX;
+        particle.y += particle.speedY;
+
+        // Fade in and out effect
+        particle.opacity -= particle.fadeSpeed;
+        if (particle.opacity <= 0) {
+          particle.opacity = particle.maxOpacity;
+          particle.trail = []; // Reset trail on respawn
+        }
+
+        // Wrap around screen edges
+        if (particle.x < -20) particle.x = canvas.width + 20;
+        if (particle.x > canvas.width + 20) particle.x = -20;
+        if (particle.y < -20) particle.y = canvas.height + 20;
+        if (particle.y > canvas.height + 20) particle.y = -20;
       });
 
       animationFrame = requestAnimationFrame(animate);

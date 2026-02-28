@@ -269,6 +269,24 @@ class OpportunityService:
         opportunities = query.all()
         
         return [self._format_opportunity_response(opp) for opp in opportunities]
+        
+    def get_trending(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Get trending opportunities based on tracked count.
+        
+        Args:
+            limit: Maximum number of opportunities to return
+            
+        Returns:
+            List of dictionaries containing opportunity data sorted by tracked count
+        """
+        opportunities = self.db.query(Opportunity).filter(
+            Opportunity.status == "active",
+            Opportunity.tracked_count > 0
+        ).order_by(
+            Opportunity.tracked_count.desc()
+        ).limit(limit).all()
+        
+        return [self._format_opportunity_response(opp) for opp in opportunities]
     
     def archive_expired_opportunities(self) -> int:
         """Archive opportunities with deadlines in the past.
@@ -314,10 +332,12 @@ class OpportunityService:
             "type": opportunity.type,
             "deadline": opportunity.deadline.isoformat(),
             "application_link": opportunity.application_link,
+            "image_url": getattr(opportunity, 'image_url', None),
             "tags": json.loads(opportunity.tags),
             "required_skills": json.loads(opportunity.required_skills),
             "eligibility": opportunity.eligibility,
             "status": opportunity.status,
+            "tracked_count": getattr(opportunity, 'tracked_count', 0),
             "created_at": opportunity.created_at.isoformat(),
             "updated_at": opportunity.updated_at.isoformat()
         }

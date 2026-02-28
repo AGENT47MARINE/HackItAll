@@ -1,6 +1,6 @@
 """Opportunity database model."""
 from datetime import datetime
-from sqlalchemy import Column, String, Text, DateTime, Index
+from sqlalchemy import Column, String, Text, DateTime, Index, Integer
 import uuid
 
 from database import Base
@@ -17,10 +17,12 @@ class Opportunity(Base):
     type = Column(String(50), nullable=False)  # hackathon, scholarship, internship, skill_program
     deadline = Column(DateTime, nullable=False, index=True)
     application_link = Column(String(500), nullable=False)
+    image_url = Column(String(1000), nullable=True)  # Store scraped og:image
     tags = Column(Text, nullable=False, default="[]")  # JSON array stored as text
     required_skills = Column(Text, nullable=True, default="[]")  # JSON array stored as text
     eligibility = Column(String(50), nullable=True)  # education level eligibility
     status = Column(String(20), default="active", nullable=False, index=True)  # active, archived
+    tracked_count = Column(Integer, default=0, nullable=False, index=True) # Used for Trending Algorithm
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

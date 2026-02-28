@@ -23,6 +23,19 @@
   animation: fadeInUp 0.8s ease;
 }
 
+.hero-logo-accent {
+  margin-bottom: 2rem;
+  opacity: 0.2;
+}
+
+.hero-logo-accent .pixel-logo {
+  height: 60px;
+}
+
+.hero-logo-accent .pixel-logo svg {
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.1));
+}
+
 .hero-title {
   font-size: clamp(3.5rem, 10vw, 8rem);
   font-weight: 800;

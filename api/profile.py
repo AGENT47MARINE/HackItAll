@@ -28,6 +28,7 @@ class ProfileResponse(BaseModel):
     created_at: str
     updated_at: str
     participation_history: list
+    activity_streak: int = 0
 
 
 class UpdateProfileRequest(BaseModel):

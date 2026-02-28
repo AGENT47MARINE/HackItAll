@@ -41,6 +41,7 @@
   letter-spacing: -0.02em;
   font-family: var(--font-mono);
   text-transform: uppercase;
+  padding: 0.25rem 0;
 }
 
 .nav-brand:hover {

@@ -84,6 +84,21 @@ export const opportunitiesAPI = {
     const response = await api.get('/recommendations', { params: { limit } });
     return response.data;
   },
+
+  getTrending: async () => {
+    const response = await axios.get('/api/opportunities/trending');
+    return response.data;
+  },
+
+  analyzeFit: async (id) => {
+    const response = await api.get(`/opportunities/${id}/analyze-fit`);
+    return response.data;
+  },
+
+  getIdeas: async (id) => {
+    const response = await api.get(`/opportunities/${id}/ideas`);
+    return response.data;
+  },
 };
 
 // Tracking API
@@ -91,6 +106,19 @@ export const trackingAPI = {
   saveOpportunity: async (opportunityId) => {
     const response = await api.post('/tracked', { opportunity_id: opportunityId });
     return response.data;
+  },
+
+  scrapeOpportunity: async (url) => {
+    // First, scrape the opportunity into the DB
+    const scrapeResponse = await api.post('/opportunities/scrape', { url });
+    const opportunityId = scrapeResponse.data.id;
+
+    // Then, automatically track it for the user
+    if (opportunityId) {
+      const trackResponse = await api.post('/tracked', { opportunity_id: opportunityId });
+      return trackResponse.data;
+    }
+    return scrapeResponse.data;
   },
 
   getTracked: async () => {

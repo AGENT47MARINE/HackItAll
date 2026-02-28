@@ -1,0 +1,30 @@
+.pixel-logo {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
+
+.pixel-logo svg {
+  height: 100%;
+  width: auto;
+  fill: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.pixel-logo:hover svg {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
+  transform: scale(1.02);
+}
+
+/* Add subtle pixel grid effect on hover */
+.pixel-logo svg rect {
+  transition: opacity 0.15s ease;
+}
+
+.pixel-logo:hover svg rect:nth-child(odd) {
+  opacity: 0.95;
+}
+
+.pixel-logo:hover svg rect:nth-child(even) {
+  opacity: 1;
+}

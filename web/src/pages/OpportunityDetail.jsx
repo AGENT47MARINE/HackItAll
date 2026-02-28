@@ -1,18 +1,28 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { opportunitiesAPI, trackingAPI } from '../services/api';
+import GridBackground from '../components/GridBackground';
+import PixelLogo from '../components/PixelLogo';
 import './Pages.css';
 
 export default function OpportunityDetail({ isAuthenticated }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [opportunity, setOpportunity] = useState(null);
+  const [fitAnalysis, setFitAnalysis] = useState(null);
+  const [projectIdeas, setProjectIdeas] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [generatingIdeas, setGeneratingIdeas] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadOpportunity();
-  }, [id]);
+    if (isAuthenticated) {
+      loadFitAnalysis();
+      loadProjectIdeas();
+    }
+  }, [id, isAuthenticated]);
 
   const loadOpportunity = async () => {
     try {
@@ -25,9 +35,32 @@ export default function OpportunityDetail({ isAuthenticated }) {
     }
   };
 
+  const loadFitAnalysis = async () => {
+    setAnalyzing(true);
+    try {
+      const data = await opportunitiesAPI.analyzeFit(id);
+      setFitAnalysis(data);
+    } catch (error) {
+      console.error('Error analyzing fit:', error);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const loadProjectIdeas = async () => {
+    setGeneratingIdeas(true);
+    try {
+      const data = await opportunitiesAPI.getIdeas(id);
+      setProjectIdeas(data.ideas);
+    } catch (error) {
+      console.error('Error fetching project ideas:', error);
+    } finally {
+      setGeneratingIdeas(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!isAuthenticated) {
-      // Prompt user to register/login
       if (confirm('You need to create an account to save opportunities. Would you like to register now?')) {
         navigate('/register');
       }
@@ -63,66 +96,157 @@ export default function OpportunityDetail({ isAuthenticated }) {
   };
 
   if (loading) {
-    return <div className="loading">Loading opportunity...</div>;
+    return (
+      <div className="detail-page">
+        <GridBackground />
+        <div className="detail-content">
+          <div className="loading-modern">
+            <div className="loading-spinner-modern"></div>
+            <p>Loading opportunity...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!opportunity) {
-    return <div className="empty-state"><h2>Opportunity not found</h2></div>;
+    return (
+      <div className="detail-page">
+        <GridBackground />
+        <div className="detail-content">
+          <div className="empty-state-modern">
+            <div className="empty-icon">◇</div>
+            <h2>Opportunity not found</h2>
+            <p>This opportunity may have been removed or doesn't exist</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="detail-container">
-      <div className="detail-header">
-        <h1>{opportunity.title}</h1>
-        <span className="type-badge">{opportunity.type.replace('_', ' ')}</span>
+    <div className="detail-page">
+      <GridBackground />
+
+      <div className="page-logo-watermark">
+        <PixelLogo />
       </div>
 
-      <div className="detail-section">
-        <h2>Deadline</h2>
-        <p className="deadline-text">{formatDate(opportunity.deadline)}</p>
-      </div>
-
-      <div className="detail-section">
-        <h2>Description</h2>
-        <p>{opportunity.description}</p>
-      </div>
-
-      {opportunity.required_skills && opportunity.required_skills.length > 0 && (
-        <div className="detail-section">
-          <h2>Required Skills</h2>
-          <div className="tags-list">
-            {opportunity.required_skills.map((skill, index) => (
-              <span key={index} className="tag">{skill}</span>
-            ))}
+      <div className="detail-content">
+        {/* Header */}
+        <div className="detail-header-modern">
+          <div className="detail-header-top">
+            <h1 className="detail-title">{opportunity.title}</h1>
+            <span className="type-badge-modern">{opportunity.type.replace('_', ' ')}</span>
+          </div>
+          <div className="detail-deadline">
+            <span className="deadline-label">Deadline:</span>
+            <span className="deadline-value">{formatDate(opportunity.deadline)}</span>
           </div>
         </div>
-      )}
 
-      {opportunity.tags && opportunity.tags.length > 0 && (
-        <div className="detail-section">
-          <h2>Tags</h2>
-          <div className="tags-list">
-            {opportunity.tags.map((tag, index) => (
-              <span key={index} className="tag">{tag}</span>
-            ))}
+        {/* Content Grid */}
+        <div className="detail-grid">
+
+          {/* AI Fit Analysis */}
+          {isAuthenticated && (analyzing || fitAnalysis) && (
+            <div className={`detail-card ai-fit-card ${fitAnalysis?.is_ready ? 'ready' : (fitAnalysis ? 'not-ready' : '')}`}>
+              <h2 className="detail-card-title">🤖 AI Fit Analysis</h2>
+              {analyzing ? (
+                <div className="analyzing-text">Analyzing your profile against this opportunity...</div>
+              ) : (
+                <>
+                  <p className="detail-text ai-recommendation-text">{fitAnalysis.recommendation_text}</p>
+
+                  {fitAnalysis.matching_skills?.length > 0 && (
+                    <div className="fit-skills-group">
+                      <h4 className="fit-skills-title">✅ Matching Skills</h4>
+                      <div className="tags-list-modern">
+                        {fitAnalysis.matching_skills.map(skill => <span key={skill} className="tag-modern skill-tag success">{skill}</span>)}
+                      </div>
+                    </div>
+                  )}
+
+                  {fitAnalysis.missing_skills?.length > 0 && (
+                    <div className="fit-skills-group">
+                      <h4 className="fit-skills-title">⚠️ Missing Skills</h4>
+                      <div className="tags-list-modern">
+                        {fitAnalysis.missing_skills.map(skill => <span key={skill} className="tag-modern skill-tag warning">{skill}</span>)}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* AI Project Ideas */}
+          {isAuthenticated && (generatingIdeas || projectIdeas) && (
+            <div className={`detail-card ai-ideas-card`}>
+              <h2 className="detail-card-title">💡 Auto-Generated Project Ideas</h2>
+              {generatingIdeas ? (
+                <div className="analyzing-text">Brainstorming potential projects based on your skills...</div>
+              ) : (
+                <div className="ideas-list-modern">
+                  {projectIdeas?.map((idea, index) => (
+                    <div key={index} className="idea-item">
+                      <h3 className="idea-title">{idea.title}</h3>
+                      <p className="idea-desc">{idea.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Description */}
+          <div className="detail-card">
+            <h2 className="detail-card-title">Description</h2>
+            <p className="detail-text">{opportunity.description}</p>
           </div>
-        </div>
-      )}
 
-      {opportunity.eligibility && (
-        <div className="detail-section">
-          <h2>Eligibility</h2>
-          <p>{opportunity.eligibility}</p>
-        </div>
-      )}
+          {/* Required Skills */}
+          {opportunity.required_skills && opportunity.required_skills.length > 0 && (
+            <div className="detail-card">
+              <h2 className="detail-card-title">Required Skills</h2>
+              <div className="tags-list-modern">
+                {opportunity.required_skills.map((skill, index) => (
+                  <span key={index} className="tag-modern skill-tag">{skill}</span>
+                ))}
+              </div>
+            </div>
+          )}
 
-      <div className="detail-actions">
-        <button onClick={handleSave} disabled={saving} className="save-button">
-          {saving ? 'Saving...' : isAuthenticated ? 'Save to Tracker' : 'Save (Login Required)'}
-        </button>
-        <button onClick={handleApply} className="apply-button">
-          Apply Now
-        </button>
+          {/* Tags */}
+          {opportunity.tags && opportunity.tags.length > 0 && (
+            <div className="detail-card">
+              <h2 className="detail-card-title">Tags</h2>
+              <div className="tags-list-modern">
+                {opportunity.tags.map((tag, index) => (
+                  <span key={index} className="tag-modern">{tag}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Eligibility */}
+          {opportunity.eligibility && (
+            <div className="detail-card">
+              <h2 className="detail-card-title">Eligibility</h2>
+              <p className="detail-text">{opportunity.eligibility}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="detail-actions-modern">
+          <button onClick={handleSave} disabled={saving} className="detail-button save">
+            {saving ? 'Saving...' : isAuthenticated ? '📌 Save to Tracker' : '📌 Save (Login Required)'}
+          </button>
+          <button onClick={handleApply} className="detail-button apply">
+            Apply Now →
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import PixelLogo from './PixelLogo';
 import './Layout.css';
 
 export default function Layout({ onLogout, isAuthenticated }) {
@@ -13,11 +14,10 @@ export default function Layout({ onLogout, isAuthenticated }) {
       <nav className="navbar">
         <div className="nav-container">
           <Link to="/" className="nav-brand">
-            <span className="brand-icon">◆</span>
-            HackItAll
+            <PixelLogo />
           </Link>
           <div className="nav-links">
-            <Link to="/" className={`nav-link ${isActive('/')}`}>
+            <Link to="/discover" className={`nav-link ${isActive('/discover')}`}>
               Discover
             </Link>
             <Link to="/opportunities" className={`nav-link ${isActive('/opportunities')}`}>

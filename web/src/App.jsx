@@ -7,6 +7,7 @@ import TrackEvent from './pages/TrackEvent';
 import Opportunities from './pages/Opportunities';
 import OpportunityDetail from './pages/OpportunityDetail';
 import Tracked from './pages/Tracked';
+import Discover from './pages/Discover';
 import Profile from './pages/Profile';
 import Layout from './components/Layout';
 import { authAPI } from './services/api';
@@ -58,6 +59,7 @@ function App() {
 
         {/* Public routes - no auth required */}
         <Route path="/" element={<Layout onLogout={handleLogout} isAuthenticated={isAuthenticated} />}>
+          <Route path="discover" element={<Discover />} />
           <Route path="opportunities" element={<Opportunities />} />
           <Route path="opportunities/:id" element={<OpportunityDetail isAuthenticated={isAuthenticated} />} />
         </Route>

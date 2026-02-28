@@ -53,6 +53,10 @@ class TrackerService:
         
         try:
             self.db.add(tracked)
+            
+            # Increment the tracked count for the Trending Algorithm
+            opportunity.tracked_count += 1
+            
             self.db.commit()
             
             return self._format_tracked_opportunity(tracked, opportunity)
@@ -111,6 +115,14 @@ class TrackerService:
             return False
         
         self.db.delete(tracked)
+        
+        # Decrement the tracked count
+        opportunity = self.db.query(Opportunity).filter(
+            Opportunity.id == opportunity_id
+        ).first()
+        if opportunity and opportunity.tracked_count > 0:
+            opportunity.tracked_count -= 1
+            
         self.db.commit()
         
         return True

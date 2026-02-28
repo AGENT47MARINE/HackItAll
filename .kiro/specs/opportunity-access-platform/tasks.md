@@ -95,7 +95,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - _Requirements: 2.1, 2.2_
 
 - [ ] 6. Implement search and filter functionality
-  - [~] 6.1 Add search and filter methods to OpportunityService
+  - [ ] 6.1 Add search and filter methods to OpportunityService
     - Implement search_opportunities() with text search on title, description, tags
     - Add filter support for type, deadline range, eligibility criteria
     - Implement combined filter logic (AND operation)
@@ -126,7 +126,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - Add mark_as_expired() for past deadlines
     - _Requirements: 3.1, 3.4, 3.5_
   
-  - [~] 7.3 Implement ParticipationHistoryService
+  - [ ] 7.3 Implement ParticipationHistoryService
     - Write add_participation(), update_participation(), get_participation_history() methods
     - Add support for notes on history entries
     - _Requirements: 9.1, 9.2, 9.3, 9.5_
@@ -139,16 +139,16 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - **Property 31: History notes persistence**
     - **Validates: Requirements 3.1, 3.4, 3.5, 9.1, 9.2, 9.5**
 
-- [~] 8. Checkpoint - Ensure all tests pass
+- [ ] 8. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 9. Implement notification system
-  - [~] 9.1 Create Reminder model and notification data structures
+  - [ ] 9.1 Create Reminder model and notification data structures
     - Define Reminder model with id, user_id, opportunity_id, scheduled_time, sent
     - Add index on scheduled_time and sent status
     - _Requirements: 3.2, 3.3_
   
-  - [~] 9.2 Implement NotificationService
+  - [ ] 9.2 Implement NotificationService
     - Write schedule_reminder() method for 7-day and 24-hour reminders
     - Implement send_notification() with email and SMS support
     - Add format_sms_message() to limit to 160 characters
@@ -156,7 +156,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - Implement retry logic with exponential backoff
     - _Requirements: 3.2, 3.3, 4.2, 4.3, 4.4_
   
-  - [~] 9.3 Implement notification channel routing
+  - [ ] 9.3 Implement notification channel routing
     - Add logic to check user notification preferences
     - Route notifications to email, SMS, or both based on preferences
     - _Requirements: 4.1, 4.2_
@@ -174,12 +174,12 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - _Requirements: 4.3, 4.4_
 
 - [ ] 10. Implement educational content service
-  - [~] 10.1 Create ContentView model and educational content storage
+  - [ ] 10.1 Create ContentView model and educational content storage
     - Define ContentView model with user_id, content_id, viewed_at
     - Create JSON/YAML files for glossary terms and guides
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
   
-  - [~] 10.2 Implement EducationalContentService
+  - [ ] 10.2 Implement EducationalContentService
     - Write get_glossary_term(), get_opportunity_type_explanation(), get_application_guide() methods
     - Implement mark_content_viewed() and has_viewed_content() for first-time display logic
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
@@ -189,13 +189,13 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - **Validates: Requirements 5.2**
 
 - [ ] 11. Implement low-bandwidth mode
-  - [~] 11.1 Add low-bandwidth rendering logic
+  - [ ] 11.1 Add low-bandwidth rendering logic
     - Create lightweight page templates with minimal images and JavaScript
     - Implement content compression for text
     - Add page size monitoring to enforce 100KB limit
     - _Requirements: 6.1, 6.2, 6.3_
   
-  - [~] 11.2 Implement low-bandwidth preference persistence
+  - [ ] 11.2 Implement low-bandwidth preference persistence
     - Add low_bandwidth_mode field to Profile model (already in 2.1)
     - Persist preference across sessions using cookies/session storage
     - _Requirements: 6.4_
@@ -213,13 +213,13 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - Implement password hashing (already in ProfileService)
     - _Requirements: 10.1, 10.2_
   
-  - [~] 12.2 Add authorization checks to all protected endpoints
+  - [ ] 12.2 Add authorization checks to all protected endpoints
     - Require authentication for profile operations
     - Require authentication for tracking operations
     - Require admin role for opportunity management
     - _Requirements: 10.2_
   
-  - [~] 12.3 Implement data export functionality
+  - [ ] 12.3 Implement data export functionality
     - Write export_user_data() method that collects all user data
     - Format export as JSON with readable structure
     - _Requirements: 10.5_
@@ -236,7 +236,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - Test unauthorized access attempts
     - _Requirements: 10.2_
 
-- [~] 13. Checkpoint - Ensure all tests pass
+- [ ] 13. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 14. Implement REST API endpoints
@@ -265,13 +265,13 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - GET /api/participation - Get participation history
     - _Requirements: 3.1, 3.4, 9.1, 9.2, 9.3_
   
-  - [~] 14.4 Create educational content endpoints
+  - [ ] 14.4 Create educational content endpoints
     - GET /api/glossary/:term - Get glossary definition
     - GET /api/guides/:type - Get application guide
     - POST /api/content/viewed - Mark content as viewed
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
   
-  - [~] 14.5 Create utility endpoints
+  - [ ] 14.5 Create utility endpoints
     - GET /api/export - Export user data
     - PUT /api/preferences - Update notification preferences
     - _Requirements: 4.1, 10.5_
@@ -283,24 +283,24 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - _Requirements: Multiple_
 
 - [ ] 15. Implement scheduled jobs
-  - [~] 15.1 Create deadline reminder job
+  - [ ] 15.1 Create deadline reminder job
     - Implement scheduled task to check for upcoming deadlines (7 days and 24 hours)
     - Call NotificationService to send reminders
     - Run job every hour
     - _Requirements: 3.2, 3.3_
   
-  - [~] 15.2 Create opportunity archival job
+  - [ ] 15.2 Create opportunity archival job
     - Implement scheduled task to archive expired opportunities
     - Run job daily at midnight
     - _Requirements: 7.3_
   
-  - [~] 15.3 Create recommendation update job
+  - [ ] 15.3 Create recommendation update job
     - Implement scheduled task to recalculate recommendations for all users
     - Run job every 6 hours
     - _Requirements: 2.3_
 
 - [ ] 16. Add input validation and error handling
-  - [~] 16.1 Implement comprehensive input validation
+  - [ ] 16.1 Implement comprehensive input validation
     - Add email and phone number validation using regex
     - Add URL validation for application links
     - Add date validation for deadlines
@@ -311,7 +311,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - **Property 15: Contact validation**
     - **Validates: Requirements 4.5**
   
-  - [~] 16.3 Add error handling middleware
+  - [ ] 16.3 Add error handling middleware
     - Handle validation errors with 400 status
     - Handle authentication errors with 401 status
     - Handle authorization errors with 403 status
@@ -321,7 +321,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - _Requirements: All requirements (error handling)_
 
 - [ ] 17. Implement caching layer
-  - [~] 17.1 Add Redis caching for frequently accessed data
+  - [ ] 17.1 Add Redis caching for frequently accessed data
     - Cache user profiles (15 minute TTL)
     - Cache opportunity listings (5 minute TTL)
     - Cache recommendations (1 hour TTL)
@@ -329,7 +329,7 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - _Requirements: Performance optimization_
 
 - [ ] 18. Add display and rendering logic
-  - [~] 18.1 Create response formatters for API endpoints
+  - [ ] 18.1 Create response formatters for API endpoints
     - Implement format_profile_response() to include all profile fields
     - Implement format_opportunity_response() to include all opportunity details
     - Implement format_tracked_opportunities_response() with deadline sorting
@@ -341,19 +341,19 @@ This implementation plan breaks down the Opportunity Access Platform into discre
     - **Property 29: Participation history display**
     - **Validates: Requirements 1.3, 2.4, 9.3**
 
-- [~] 19. Final checkpoint - Ensure all tests pass
+- [ ] 19. Final checkpoint - Ensure all tests pass
   - Run complete test suite with all unit and property tests
   - Verify all 34 correctness properties are tested
   - Check test coverage meets 80% minimum
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 20. Create database migrations and seed data
-  - [~] 20.1 Create database migration scripts
+  - [ ] 20.1 Create database migration scripts
     - Generate migrations for all models
     - Add indexes for performance
     - _Requirements: All requirements (data layer)_
   
-  - [~] 20.2 Create seed data for testing
+  - [ ] 20.2 Create seed data for testing
     - Add sample opportunities (hackathons, scholarships, internships)
     - Add sample glossary terms and guides
     - Add sample user profiles for testing

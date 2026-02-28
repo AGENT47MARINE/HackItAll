@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { opportunitiesAPI } from '../services/api';
 import OpportunityCard from '../components/OpportunityCard';
+import GridBackground from '../components/GridBackground';
 import './Pages.css';
 
 export default function Opportunities() {
@@ -37,58 +38,82 @@ export default function Opportunities() {
   };
 
   return (
-    <div className="page-container">
-      <div className="page-header">
-        <h1>Search Opportunities</h1>
-      </div>
+    <div className="opportunities-page">
+      <GridBackground />
 
-      <div className="search-section">
-        <form onSubmit={handleSearch} className="search-form">
-          <input
-            type="text"
-            placeholder="Search opportunities..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-          <button type="submit" className="search-button">
-            Search
-          </button>
-        </form>
+      <div className="opportunities-content">
+        {/* Header Section */}
+        <div className="opportunities-header">
+          <h1 className="opportunities-title">
+            Explore
+            <span className="gradient-text"> Opportunities</span>
+          </h1>
+          <p className="opportunities-subtitle">
+            Search through thousands of hackathons, scholarships, internships, and skill programs
+          </p>
+        </div>
 
-        <div className="filter-chips">
-          <button
-            className={`filter-chip ${!selectedType ? 'active' : ''}`}
-            onClick={() => setSelectedType(null)}
-          >
-            All
-          </button>
-          {types.map((type) => (
-            <button
-              key={type}
-              className={`filter-chip ${selectedType === type ? 'active' : ''}`}
-              onClick={() => setSelectedType(type)}
-            >
-              {type.replace('_', ' ')}
+        {/* Search Section */}
+        <div className="search-section-modern">
+          <form onSubmit={handleSearch} className="search-form-modern">
+            <input
+              type="text"
+              placeholder="Search by title, organization, or keywords..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input-modern"
+            />
+            <button type="submit" className="search-button-modern">
+              Search
             </button>
-          ))}
-        </div>
-      </div>
+          </form>
 
-      {loading ? (
-        <div className="loading">Searching...</div>
-      ) : opportunities.length === 0 ? (
-        <div className="empty-state">
-          <h2>No opportunities found</h2>
-          <p>Try adjusting your search criteria</p>
+          <div className="filter-chips-modern">
+            <button
+              className={`filter-chip-modern ${!selectedType ? 'active' : ''}`}
+              onClick={() => setSelectedType(null)}
+            >
+              All
+            </button>
+            {types.map((type) => (
+              <button
+                key={type}
+                className={`filter-chip-modern ${selectedType === type ? 'active' : ''}`}
+                onClick={() => setSelectedType(type)}
+              >
+                {type.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
         </div>
-      ) : (
-        <div className="opportunities-grid">
-          {opportunities.map((opportunity) => (
-            <OpportunityCard key={opportunity.id} opportunity={opportunity} />
-          ))}
-        </div>
-      )}
+
+        {/* Results Section */}
+        {loading ? (
+          <div className="loading-modern">
+            <div className="loading-spinner-modern"></div>
+            <p>Searching opportunities...</p>
+          </div>
+        ) : opportunities.length === 0 ? (
+          <div className="empty-state-modern">
+            <div className="empty-icon">◇</div>
+            <h2>No opportunities found</h2>
+            <p>Try adjusting your search criteria or filters</p>
+          </div>
+        ) : (
+          <>
+            <div className="results-count">
+              Found <span className="count-highlight">{opportunities.length}</span> opportunities
+            </div>
+            <div className="opportunities-grid-modern">
+              {opportunities.map((opportunity) => (
+                <div key={opportunity.id} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }} onClick={() => window.location.href = `/opportunities/${opportunity.id}`} className="clickable-card-wrapper">
+                  <OpportunityCard opportunity={opportunity} />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
