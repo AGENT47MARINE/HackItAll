@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
 import { opportunitiesAPI, trackingAPI } from '../services/api';
 import GridBackground from '../components/GridBackground';
 import PixelLogo from '../components/PixelLogo';
 import './Pages.css';
 
-export default function OpportunityDetail({ isAuthenticated }) {
+export default function OpportunityDetail() {
+  const { isSignedIn: isAuthenticated } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [opportunity, setOpportunity] = useState(null);

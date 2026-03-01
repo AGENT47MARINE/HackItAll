@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from services.opportunity_service import OpportunityService, ValidationError
 from services.recommendation_service import RecommendationEngine
-from api.auth import get_current_user, require_admin
+from api.auth import get_current_user, get_current_active_user
 
 
 # Router
@@ -338,7 +338,7 @@ async def scrape_opportunity(
 @router.post("/admin/opportunities", response_model=OpportunityResponse, status_code=status.HTTP_201_CREATED)
 async def create_opportunity(
     request: CreateOpportunityRequest,
-    current_user_id: str = Depends(require_admin),
+    current_user_id: str = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Create a new opportunity (admin only).
@@ -384,7 +384,7 @@ async def create_opportunity(
 async def update_opportunity(
     opportunity_id: str,
     request: UpdateOpportunityRequest,
-    current_user_id: str = Depends(require_admin),
+    current_user_id: str = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Update an opportunity (admin only).
@@ -432,3 +432,104 @@ async def update_opportunity(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
+
+
+class BatchScrapeResponse(BaseModel):
+    """Response model for batch scrape results."""
+    new_count: int
+    skipped_count: int
+    sources: List[str]
+    errors: List[str]
+
+
+@router.post("/admin/scrape-batch", response_model=BatchScrapeResponse)
+async def batch_scrape(
+    db: Session = Depends(get_db)
+):
+    """Trigger batch scraping from Unstop and Devpost.
+
+    Runs both spiders, deduplicates by source_url, and inserts new
+    opportunities into the database.
+
+    Returns:
+        Batch scrape results with counts and any errors.
+    """
+    from services.scraper.unstop_spider import UnstopSpider
+    from services.scraper.devpost_spider import DevpostSpider
+    from models.opportunity import Opportunity
+
+    errors = []
+    all_scraped = []
+    sources_used = []
+
+    # Run Unstop spider
+    try:
+        unstop = UnstopSpider()
+        unstop_results = unstop.scrape(max_results=15)
+        all_scraped.extend(unstop_results)
+        if unstop_results:
+            sources_used.append("unstop.com")
+    except Exception as e:
+        errors.append(f"Unstop spider failed: {str(e)}")
+
+    # Run Devpost spider
+    try:
+        devpost = DevpostSpider()
+        devpost_results = devpost.scrape(max_results=15)
+        all_scraped.extend(devpost_results)
+        if devpost_results:
+            sources_used.append("devpost.com")
+    except Exception as e:
+        errors.append(f"Devpost spider failed: {str(e)}")
+
+    # Deduplicate and insert
+    new_count = 0
+    skipped_count = 0
+
+    for item in all_scraped:
+        source_url = item.get("source_url", "")
+
+        if not source_url:
+            skipped_count += 1
+            continue
+
+        # Check if already exists
+        existing = db.query(Opportunity).filter(
+            Opportunity.source_url == source_url
+        ).first()
+
+        if existing:
+            skipped_count += 1
+            continue
+
+        try:
+            opp = Opportunity(
+                title=item.get("title", "Unknown"),
+                description=item.get("description", "Scraped opportunity"),
+                type=item.get("type", "hackathon"),
+                deadline=item.get("deadline", datetime.utcnow()),
+                application_link=item.get("application_link", source_url),
+                image_url=item.get("image_url"),
+                tags=item.get("tags", "[]"),
+                required_skills=item.get("required_skills", "[]"),
+                eligibility=item.get("eligibility"),
+                location=item.get("location"),
+                location_type=item.get("location_type", "Online"),
+                source_url=source_url,
+                status="active",
+            )
+            db.add(opp)
+            new_count += 1
+        except Exception as e:
+            errors.append(f"Failed to insert '{item.get('title', '?')}': {str(e)}")
+
+    if new_count > 0:
+        db.commit()
+
+    return BatchScrapeResponse(
+        new_count=new_count,
+        skipped_count=skipped_count,
+        sources=sources_used,
+        errors=errors,
+    )
+

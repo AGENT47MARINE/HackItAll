@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import HomeScrollStory from './pages/HomeScrollStory';
@@ -9,47 +9,10 @@ import OpportunityDetail from './pages/OpportunityDetail';
 import Tracked from './pages/Tracked';
 import Discover from './pages/Discover';
 import Profile from './pages/Profile';
+import Onboarding from './pages/Onboarding';
 import Layout from './components/Layout';
-import { authAPI } from './services/api';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const token = localStorage.getItem('authToken');
-    setIsAuthenticated(!!token);
-    setLoading(false);
-  };
-
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = async () => {
-    await authAPI.logout();
-    setIsAuthenticated(false);
-  };
-
-  if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        background: 'linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 100%)',
-        color: '#fff'
-      }}>
-        <div>Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <BrowserRouter>
       <Routes>
@@ -58,27 +21,47 @@ function App() {
         <Route path="/track" element={<TrackEvent />} />
 
         {/* Public routes - no auth required */}
-        <Route path="/" element={<Layout onLogout={handleLogout} isAuthenticated={isAuthenticated} />}>
+        <Route path="/" element={<Layout />}>
           <Route path="discover" element={<Discover />} />
           <Route path="opportunities" element={<Opportunities />} />
-          <Route path="opportunities/:id" element={<OpportunityDetail isAuthenticated={isAuthenticated} />} />
+          <Route path="opportunities/:id" element={<OpportunityDetail />} />
         </Route>
 
-        {/* Auth routes */}
-        <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />
-        } />
-        <Route path="/register" element={
-          isAuthenticated ? <Navigate to="/" replace /> : <Register onLogin={handleLogin} />
-        } />
+        {/* Auth routes (Handled seamlessly by Clerk) */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         {/* Protected routes - auth required */}
-        <Route path="/" element={<Layout onLogout={handleLogout} isAuthenticated={isAuthenticated} />}>
+        <Route path="/" element={<Layout />}>
+          <Route path="onboarding" element={
+            <>
+              <SignedIn>
+                <Onboarding />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          } />
           <Route path="tracked" element={
-            isAuthenticated ? <Tracked /> : <Navigate to="/login" replace />
+            <>
+              <SignedIn>
+                <Tracked />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
           } />
           <Route path="profile" element={
-            isAuthenticated ? <Profile /> : <Navigate to="/login" replace />
+            <>
+              <SignedIn>
+                <Profile />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
           } />
         </Route>
 

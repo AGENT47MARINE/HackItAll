@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
+import { SignedIn, SignedOut } from '@clerk/clerk-react';
 import TerminalBackground from '../components/TerminalBackground';
 import EventCard from '../components/EventCard';
 import { IconBolt, IconBell, IconCpu, IconClock, IconUsers, IconCheck, IconMail, IconCalendar, IconEye, IconLink } from '../components/Icons';
@@ -226,14 +227,9 @@ const sampleEvents = [
 export default function HomeScrollStory() {
   const [trackLink, setTrackLink] = useState('');
   const [events, setEvents] = useState(sampleEvents);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const containerRef = useRef(null);
   const eventsScrollRef = useRef(null);
-
-  useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem('authToken'));
-  }, []);
 
   const { scrollYProgress } = useScroll();
   const progressWidth = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
@@ -302,14 +298,13 @@ export default function HomeScrollStory() {
         </Link>
         <div className="hia-nav-links">
           <Link to="/discover" className="hia-nav-link">Explore</Link>
-          {isAuthenticated ? (
+          <SignedIn>
             <Link to="/profile" className="hia-nav-link hia-nav-cta">Profile</Link>
-          ) : (
-            <>
-              <Link to="/login" className="hia-nav-link">Sign In</Link>
-              <Link to="/register" className="hia-nav-link hia-nav-cta">Get Started</Link>
-            </>
-          )}
+          </SignedIn>
+          <SignedOut>
+            <Link to="/login" className="hia-nav-link">Sign In</Link>
+            <Link to="/register" className="hia-nav-link hia-nav-cta">Get Started</Link>
+          </SignedOut>
         </div>
       </nav>
 

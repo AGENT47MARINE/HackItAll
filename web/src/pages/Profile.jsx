@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import api from '../services/api';
 import GridBackground from '../components/GridBackground';
 import PixelLogo from '../components/PixelLogo';
 import './Pages.css';
@@ -14,8 +14,8 @@ export default function Profile() {
 
   const loadProfile = async () => {
     try {
-      const data = await authAPI.getCurrentUser();
-      setProfile(data);
+      const response = await api.get('/auth/me');
+      setProfile(response.data);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {

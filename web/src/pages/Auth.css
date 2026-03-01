@@ -193,6 +193,107 @@
   text-decoration: underline;
 }
 
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  font-size: 1.2rem;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.input-wrapper input,
+.modern-select {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem !important;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  appearance: none;
+}
+
+.modern-select {
+  cursor: pointer;
+}
+
+.modern-select option {
+  background: #0a0a0f;
+  color: white;
+  padding: 10px;
+}
+
+.select-wrapper::after {
+  content: '▼';
+  position: absolute;
+  right: 1.2rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.interest-tag {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.interest-tag:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.interest-tag.active {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: rgba(0, 240, 255, 0.5);
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.primary-gradient {
+  background: linear-gradient(135deg, #00f0ff 0%, #0080ff 100%);
+  color: #000 !important;
+  font-weight: 700;
+  border: none;
+}
+
+.primary-gradient:hover:not(:disabled) {
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+}
+
+.title-gradient {
+  background: linear-gradient(to right, #ffffff, #00f0ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: 1.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
 @media (max-width: 600px) {
   .auth-card {
     padding: 2rem;

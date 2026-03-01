@@ -1,9 +1,32 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
+import api from '../services/api';
 import PixelLogo from './PixelLogo';
 import './Layout.css';
 
-export default function Layout({ onLogout, isAuthenticated }) {
+export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isLoaded, user } = useUser();
+
+  useEffect(() => {
+    // If user is authenticated, check if they finished onboarding
+    const checkOnboarding = async () => {
+      if (isLoaded && user && location.pathname !== '/onboarding') {
+        try {
+          const res = await api.get('/auth/me');
+          if (res.data && res.data.education_level === 'Not Specified') {
+            navigate('/onboarding');
+          }
+        } catch (error) {
+          console.error('Failed to check onboarding status', error);
+        }
+      }
+    };
+
+    checkOnboarding();
+  }, [isLoaded, user, location.pathname, navigate]);
 
   const isActive = (path) => {
     return location.pathname === path ? 'active' : '';
@@ -23,28 +46,25 @@ export default function Layout({ onLogout, isAuthenticated }) {
             <Link to="/opportunities" className={`nav-link ${isActive('/opportunities')}`}>
               Search
             </Link>
-            {isAuthenticated ? (
-              <>
-                <Link to="/tracked" className={`nav-link ${isActive('/tracked')}`}>
-                  Saved
-                </Link>
-                <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>
-                  Profile
-                </Link>
-                <button onClick={onLogout} className="nav-button logout-button">
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="nav-button login-button">
-                  Login
-                </Link>
-                <Link to="/register" className="nav-button register-button">
-                  Get Started
-                </Link>
-              </>
-            )}
+            <SignedIn>
+              <Link to="/tracked" className={`nav-link ${isActive('/tracked')}`}>
+                Saved
+              </Link>
+              <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>
+                Profile
+              </Link>
+              <div className="nav-button">
+                <UserButton afterSignOutUrl="/" />
+              </div>
+            </SignedIn>
+            <SignedOut>
+              <Link to="/login" className="nav-button login-button">
+                Login
+              </Link>
+              <Link to="/register" className="nav-button register-button">
+                Get Started
+              </Link>
+            </SignedOut>
           </div>
         </div>
       </nav>

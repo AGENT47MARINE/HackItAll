@@ -9,48 +9,21 @@ const api = axios.create({
   },
 });
 
-// Add auth token to requests
+// Add async local auth token from Clerk to all requests
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    // Clerk seamlessly manages the JWT session client-side
+    // We inject it into the authorization header so FastAPI can decode it
+    if (window.Clerk && window.Clerk.session) {
+      const token = await window.Clerk.session.getToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
-
-// Auth API
-export const authAPI = {
-  register: async (userData) => {
-    const response = await api.post('/auth/register', userData);
-    if (response.data.access_token) {
-      localStorage.setItem('authToken', response.data.access_token);
-      localStorage.setItem('userId', response.data.user_id);
-    }
-    return response.data;
-  },
-
-  login: async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
-    if (response.data.access_token) {
-      localStorage.setItem('authToken', response.data.access_token);
-      localStorage.setItem('userId', response.data.user_id);
-    }
-    return response.data;
-  },
-
-  logout: async () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userId');
-  },
-
-  getCurrentUser: async () => {
-    const response = await api.get('/auth/me');
-    return response.data;
-  },
-};
 
 // Profile API
 export const profileAPI = {

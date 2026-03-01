@@ -21,6 +21,9 @@ class Opportunity(Base):
     tags = Column(Text, nullable=False, default="[]")  # JSON array stored as text
     required_skills = Column(Text, nullable=True, default="[]")  # JSON array stored as text
     eligibility = Column(String(50), nullable=True)  # education level eligibility
+    location = Column(String(255), nullable=True)
+    location_type = Column(String(50), nullable=False, default="Online", index=True)  # Online, In-Person, Hybrid
+    source_url = Column(String(1000), nullable=True, unique=True)  # Used for dedup during scraping
     status = Column(String(20), default="active", nullable=False, index=True)  # active, archived
     tracked_count = Column(Integer, default=0, nullable=False, index=True) # Used for Trending Algorithm
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

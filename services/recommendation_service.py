@@ -155,12 +155,11 @@ class RecommendationEngine:
                                   participation_history: List[Dict[str, Any]] = None) -> float:
         """Calculate relevance score for a user-opportunity pair.
 
-        The scoring algorithm combines multiple factors:
-        - ML Semantic Match (TF-IDF Cosine Similarity): Comparing profile text vs opportunity text
-        - Education level compatibility: Binary match (eligible/not eligible)
-        - Participation history: Boost score for similar opportunities the user engaged with successfully
-
-        Score = (0.7 * mlScore) + (0.2 * educationMatch) + (0.1 * historyBoost)
+        Scoring Rules:
+        1. Eligibility Filter (Hard Check): Score = -1000.0 or 0.0
+        2. Interest Matching (+10 Points per match)
+        3. Format Preference (+5 Points if Online/Hybrid)
+        4. Urgency Bonus (+5 Points if deadline within 14 days)
 
         Args:
             profile: User profile
@@ -168,43 +167,44 @@ class RecommendationEngine:
             participation_history: List of user's past participation entries (optional)
 
         Returns:
-            Relevance score between 0.0 and 1.0
+            Relevance score (Float)
         """
-        # Parse JSON fields
-        user_interests = json.loads(profile.interests) if isinstance(profile.interests, str) else profile.interests
-        user_skills = json.loads(profile.skills) if isinstance(profile.skills, str) else profile.skills
-        opportunity_tags = json.loads(opportunity.tags) if isinstance(opportunity.tags, str) else opportunity.tags
-        opportunity_skills = json.loads(opportunity.required_skills) if isinstance(opportunity.required_skills, str) else opportunity.required_skills
+        import datetime
+        score = 0.0
 
-        # Convert to lowercase for case-insensitive matching in ML fallback
-        user_interests_lower = [interest.lower() for interest in user_interests]
-        user_skills_lower = [skill.lower() for skill in user_skills]
-        opportunity_tags_lower = [tag.lower() for tag in opportunity_tags]
-        opportunity_skills_lower = [skill.lower() for skill in opportunity_skills]
+        # Parse JSON fields securely
+        user_interests = set([i.strip().lower() for i in (json.loads(profile.interests) if isinstance(profile.interests, str) else profile.get('interests', []))])
+        opp_tags = set([t.strip().lower() for t in (json.loads(opportunity.tags) if isinstance(opportunity.tags, str) else opportunity.tags)])
         
-        # Safe text extraction
-        opp_title = opportunity.title or ""
-        opp_desc = opportunity.description or ""
+        # 1. Eligibility Filter (Hard Check)
+        if opportunity.eligibility:
+            opp_elig = opportunity.eligibility.strip().lower()
+            prof_elig = profile.education_level.strip().lower() if profile.education_level else ""
+            
+            # Simple exclusionary logic for basic levels
+            if "high school" in opp_elig and "high school" not in prof_elig:
+                return -1000.0
+            if "graduate" in opp_elig and not any(x in prof_elig for x in ["graduate", "m.tech", "alumni"]):
+                return -1000.0
+            if "b.tech" in opp_elig and not any(x in prof_elig for x in ["b.tech", "undergraduate"]):
+                return -1000.0
+        
+        # 2. Interest Matching (+10 Points per match)
+        matches = user_interests.intersection(opp_tags)
+        score += (len(matches) * 10.0)
 
-        # Calculate ML semantic match (0.0 to 1.0)
-        ml_score = self._calculate_ml_semantic_match(
-            user_interests=user_interests_lower,
-            user_skills=user_skills_lower,
-            opp_title=opp_title,
-            opp_desc=opp_desc,
-            opp_tags=opportunity_tags_lower,
-            opp_skills=opportunity_skills_lower
-        )
+        # 3. Format Preference (+5 Points for Online/Hybrid)
+        loc_type = (opportunity.location_type or "").strip().lower()
+        if "online" in loc_type or "hybrid" in loc_type:
+            score += 5.0
 
-        # Calculate education match (0.0 or 1.0)
-        education_match = self._calculate_education_match(profile.education_level, opportunity.eligibility)
-
-        # Calculate history boost (0.0 to 1.0)
-        history_boost = self._calculate_history_boost(opportunity.type, participation_history)
-
-        # Apply scoring formula
-        # Weights: 70% ML Semantic Match, 20% Education Match, 10% History Boost
-        score = (0.7 * ml_score) + (0.2 * education_match) + (0.1 * history_boost)
+        # 4. Urgency Bonus (+5 Points for approaching deadlines)
+        if opportunity.deadline:
+            days_until = (opportunity.deadline - datetime.datetime.utcnow()).days
+            if 0 <= days_until <= 14:
+                score += 5.0
+            elif days_until < 0:
+                return -1000.0 # Exclude expired events entirely
 
         return score
 

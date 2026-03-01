@@ -1,8 +1,14 @@
-"""Tests for recommendation service and scoring algorithm."""
+"""Tests for recommendation service and scoring algorithm.
+
+Updated to match the new point-based scoring system:
+- Interest matching: +10 per match
+- Online/Hybrid bonus: +5
+- Urgency bonus: +5 (deadline within 14 days)
+- Hard eligibility: -1000 (incompatible education level)
+"""
 import json
 import pytest
 from datetime import datetime, timedelta
-from hypothesis import given, strategies as st
 
 from models.user import User, Profile
 from models.opportunity import Opportunity
@@ -10,24 +16,22 @@ from services.recommendation_service import RecommendationEngine
 
 
 class TestRecommendationScoringAlgorithm:
-    """Unit tests for the recommendation scoring algorithm."""
-    
+    """Unit tests for the point-based recommendation scoring algorithm."""
+
     def test_perfect_match_scenario(self, db_session):
-        """Test scoring when user perfectly matches opportunity."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
+        """Test scoring when user interests perfectly match opportunity tags."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["python", "machine learning", "ai"]),
             skills=json.dumps(["python", "tensorflow", "pytorch"]),
-            education_level="undergraduate"
+            education_level="undergraduate",
         )
         db_session.add(profile)
-        
-        # Create opportunity that matches perfectly
+
         opportunity = Opportunity(
             title="AI Hackathon",
             description="Build AI solutions",
@@ -35,36 +39,33 @@ class TestRecommendationScoringAlgorithm:
             deadline=datetime.utcnow() + timedelta(days=30),
             application_link="https://example.com/apply",
             tags=json.dumps(["python", "machine learning", "ai"]),
-            required_skills=json.dumps(["python", "tensorflow", "pytorch"]),
-            eligibility="undergraduate"
+            required_skills=json.dumps(["python", "tensorflow"]),
+            eligibility="undergraduate",
+            location_type="Online",
         )
         db_session.add(opportunity)
         db_session.commit()
-        
-        # Calculate score
+
         engine = RecommendationEngine(db_session)
         score = engine.calculate_relevance_score(profile, opportunity)
-        
-        # With TF-IDF and duplicate word weighting, a "perfect" match is very close to 1.0
-        # Score approx: 0.7*1.0 + 0.2*1.0 + 0.1*0.0 = 0.9
-        assert score > 0.6
-    
+
+        # 3 interest matches × 10 = 30, Online bonus = +5 → 35
+        assert score >= 30.0
+
     def test_no_match_scenario(self, db_session):
-        """Test scoring when user has no match with opportunity."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
+        """Test scoring when user has zero overlap with opportunity tags."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["biology", "chemistry"]),
             skills=json.dumps(["lab work", "research"]),
-            education_level="graduate"
+            education_level="graduate",
         )
         db_session.add(profile)
-        
-        # Create opportunity with no overlap
+
         opportunity = Opportunity(
             title="Web Dev Internship",
             description="Build web applications",
@@ -72,109 +73,257 @@ class TestRecommendationScoringAlgorithm:
             deadline=datetime.utcnow() + timedelta(days=30),
             application_link="https://example.com/apply",
             tags=json.dumps(["javascript", "react", "nodejs"]),
-            required_skills=json.dumps(["javascript", "html", "css"]),
-            eligibility="undergraduate"
+            required_skills=json.dumps(["javascript", "html"]),
+            eligibility="undergraduate",
+            location_type="In-Person",
         )
         db_session.add(opportunity)
         db_session.commit()
-        
-        # Calculate score
+
         engine = RecommendationEngine(db_session)
         score = engine.calculate_relevance_score(profile, opportunity)
-        
-        # No match: Cosine similarity is 0.0, education doesn't match (0.0), no history (0.0)
-        # Score = 0.7*0.0 + 0.2*0.0 + 0.1*0.0 = 0.0
-        assert score < 0.2
-    
+
+        # No interest overlap, not online, no urgency → 0.0
+        assert score == 0.0
+
     def test_partial_match_scenario(self, db_session):
-        """Test scoring with partial matches."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
+        """Test scoring with partial interest matching."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["python", "data science", "web development"]),
             skills=json.dumps(["python", "sql"]),
-            education_level="undergraduate"
+            education_level="undergraduate",
         )
         db_session.add(profile)
-        
-        # Create opportunity with partial overlap
+
         opportunity = Opportunity(
             title="Data Science Internship",
             description="Work with data",
             type="internship",
             deadline=datetime.utcnow() + timedelta(days=30),
             application_link="https://example.com/apply",
-            tags=json.dumps(["python", "data science"]),  # 2 out of 3 interests match
-            required_skills=json.dumps(["python", "sql", "pandas"]),  # 2 out of 3 skills match
-            eligibility="undergraduate"
+            tags=json.dumps(["python", "data science"]),
+            required_skills=json.dumps(["python", "sql", "pandas"]),
+            eligibility="undergraduate",
+            location_type="In-Person",
         )
         db_session.add(opportunity)
         db_session.commit()
-        
-        # Calculate score
+
         engine = RecommendationEngine(db_session)
         score = engine.calculate_relevance_score(profile, opportunity)
-        
-        # Partial match: ML score will be > 0.0 but < 1.0, education matches (1.0), no history (0.0)
-        # The exact ML score depends on TF-IDF weighting, but it should be between 0.4 and 0.8
-        assert 0.4 < score < 0.8
-    
-    def test_no_required_skills(self, db_session):
-        """Test scoring when opportunity has no required skills."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
+
+        # 2 interest matches × 10 = 20.0
+        assert score == 20.0
+
+    def test_online_format_bonus(self, db_session):
+        """Test that Online/Hybrid events get a +5 bonus."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
-        profile = Profile(
-            user_id=user.id,
-            interests=json.dumps(["writing", "journalism"]),
-            skills=json.dumps([]),
-            education_level="undergraduate"
-        )
-        db_session.add(profile)
-        
-        # Create opportunity with no required skills
-        opportunity = Opportunity(
-            title="Writing Scholarship",
-            description="For aspiring writers",
-            type="scholarship",
-            deadline=datetime.utcnow() + timedelta(days=30),
-            application_link="https://example.com/apply",
-            tags=json.dumps(["writing", "journalism"]),
-            required_skills=json.dumps([]),  # No skills required
-            eligibility="undergraduate"
-        )
-        db_session.add(opportunity)
-        db_session.commit()
-        
-        # Calculate score
-        engine = RecommendationEngine(db_session)
-        score = engine.calculate_relevance_score(profile, opportunity)
-        
-        # All interests match, ML score high, education matches (1.0), no history (0.0)
-        assert score > 0.6
-    
-    def test_no_education_requirement(self, db_session):
-        """Test scoring when opportunity has no education requirement."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
-        db_session.add(user)
-        db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["coding"]),
             skills=json.dumps(["python"]),
-            education_level="high_school"
+            education_level="undergraduate",
         )
         db_session.add(profile)
-        
-        # Create opportunity with no education requirement
+
+        opp_online = Opportunity(
+            title="Online Hackathon",
+            description="Virtual event",
+            type="hackathon",
+            deadline=datetime.utcnow() + timedelta(days=30),
+            application_link="https://example.com/online",
+            tags=json.dumps(["coding"]),
+            required_skills=json.dumps([]),
+            eligibility="undergraduate",
+            location_type="Online",
+        )
+
+        opp_inperson = Opportunity(
+            title="In-Person Hackathon",
+            description="Physical event",
+            type="hackathon",
+            deadline=datetime.utcnow() + timedelta(days=30),
+            application_link="https://example.com/inperson",
+            tags=json.dumps(["coding"]),
+            required_skills=json.dumps([]),
+            eligibility="undergraduate",
+            location_type="In-Person",
+        )
+        db_session.add_all([opp_online, opp_inperson])
+        db_session.commit()
+
+        engine = RecommendationEngine(db_session)
+        score_online = engine.calculate_relevance_score(profile, opp_online)
+        score_inperson = engine.calculate_relevance_score(profile, opp_inperson)
+
+        # Online should get +5 bonus
+        assert score_online == score_inperson + 5.0
+
+    def test_urgency_bonus(self, db_session):
+        """Test that events with deadlines within 14 days get +5."""
+        user = User(email="test@example.com")
+        db_session.add(user)
+        db_session.flush()
+
+        profile = Profile(
+            user_id=user.id,
+            interests=json.dumps(["coding"]),
+            skills=json.dumps([]),
+            education_level="undergraduate",
+        )
+        db_session.add(profile)
+
+        opp_urgent = Opportunity(
+            title="Urgent Hackathon",
+            description="Deadline soon",
+            type="hackathon",
+            deadline=datetime.utcnow() + timedelta(days=5),
+            application_link="https://example.com/urgent",
+            tags=json.dumps(["coding"]),
+            required_skills=json.dumps([]),
+            location_type="In-Person",
+        )
+
+        opp_later = Opportunity(
+            title="Later Hackathon",
+            description="Deadline far",
+            type="hackathon",
+            deadline=datetime.utcnow() + timedelta(days=30),
+            application_link="https://example.com/later",
+            tags=json.dumps(["coding"]),
+            required_skills=json.dumps([]),
+            location_type="In-Person",
+        )
+        db_session.add_all([opp_urgent, opp_later])
+        db_session.commit()
+
+        engine = RecommendationEngine(db_session)
+        score_urgent = engine.calculate_relevance_score(profile, opp_urgent)
+        score_later = engine.calculate_relevance_score(profile, opp_later)
+
+        # Urgent should get +5 bonus
+        assert score_urgent == score_later + 5.0
+
+    def test_expired_events_excluded(self, db_session):
+        """Test that expired events return -1000."""
+        user = User(email="test@example.com")
+        db_session.add(user)
+        db_session.flush()
+
+        profile = Profile(
+            user_id=user.id,
+            interests=json.dumps(["coding"]),
+            skills=json.dumps([]),
+            education_level="undergraduate",
+        )
+        db_session.add(profile)
+
+        opp_expired = Opportunity(
+            title="Expired Hackathon",
+            description="Already done",
+            type="hackathon",
+            deadline=datetime.utcnow() - timedelta(days=5),
+            application_link="https://example.com/expired",
+            tags=json.dumps(["coding"]),
+            required_skills=json.dumps([]),
+            location_type="Online",
+        )
+        db_session.add(opp_expired)
+        db_session.commit()
+
+        engine = RecommendationEngine(db_session)
+        score = engine.calculate_relevance_score(profile, opp_expired)
+
+        assert score == -1000.0
+
+    def test_eligibility_hard_filter_high_school(self, db_session):
+        """Test that High School-only events exclude B.Tech students."""
+        user = User(email="test@example.com")
+        db_session.add(user)
+        db_session.flush()
+
+        profile = Profile(
+            user_id=user.id,
+            interests=json.dumps(["coding"]),
+            skills=json.dumps([]),
+            education_level="B.Tech 3rd Year",
+        )
+        db_session.add(profile)
+
+        opp = Opportunity(
+            title="High School Hack",
+            description="For high schoolers only",
+            type="hackathon",
+            deadline=datetime.utcnow() + timedelta(days=30),
+            application_link="https://example.com/hs",
+            tags=json.dumps(["coding"]),
+            required_skills=json.dumps([]),
+            eligibility="High School",
+            location_type="In-Person",
+        )
+        db_session.add(opp)
+        db_session.commit()
+
+        engine = RecommendationEngine(db_session)
+        score = engine.calculate_relevance_score(profile, opp)
+
+        assert score == -1000.0
+
+    def test_eligibility_hard_filter_graduate(self, db_session):
+        """Test that Graduate-only events exclude B.Tech students."""
+        user = User(email="test@example.com")
+        db_session.add(user)
+        db_session.flush()
+
+        profile = Profile(
+            user_id=user.id,
+            interests=json.dumps(["research"]),
+            skills=json.dumps([]),
+            education_level="B.Tech 2nd Year",
+        )
+        db_session.add(profile)
+
+        opp = Opportunity(
+            title="Graduate Symposium",
+            description="Graduate-level research",
+            type="skill_program",
+            deadline=datetime.utcnow() + timedelta(days=20),
+            application_link="https://example.com/grad",
+            tags=json.dumps(["research"]),
+            required_skills=json.dumps([]),
+            eligibility="Graduate",
+            location_type="Online",
+        )
+        db_session.add(opp)
+        db_session.commit()
+
+        engine = RecommendationEngine(db_session)
+        score = engine.calculate_relevance_score(profile, opp)
+
+        assert score == -1000.0
+
+    def test_no_eligibility_requirement(self, db_session):
+        """Test that events with no eligibility requirement accept everyone."""
+        user = User(email="test@example.com")
+        db_session.add(user)
+        db_session.flush()
+
+        profile = Profile(
+            user_id=user.id,
+            interests=json.dumps(["coding"]),
+            skills=json.dumps(["python"]),
+            education_level="high_school",
+        )
+        db_session.add(profile)
+
         opportunity = Opportunity(
             title="Beginner Hackathon",
             description="Open to all",
@@ -183,122 +332,32 @@ class TestRecommendationScoringAlgorithm:
             application_link="https://example.com/apply",
             tags=json.dumps(["coding"]),
             required_skills=json.dumps(["python"]),
-            eligibility=None  # No education requirement
+            eligibility=None,
+            location_type="In-Person",
         )
         db_session.add(opportunity)
         db_session.commit()
-        
-        # Calculate score
+
         engine = RecommendationEngine(db_session)
         score = engine.calculate_relevance_score(profile, opportunity)
-        
-        # All interests match, all skills match, no education requirement so eligible (1.0), no history (0.0)
-        # Score approx = 0.7*1.0 + 0.2*1.0 + 0.1*0.0 = 0.9
-        assert score > 0.6
-    
-    def test_history_boost_with_successful_participation(self, db_session):
-        """Test scoring with successful participation history."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
-        db_session.add(user)
-        db_session.flush()
-        
-        profile = Profile(
-            user_id=user.id,
-            interests=json.dumps(["coding"]),
-            skills=json.dumps(["python"]),
-            education_level="undergraduate"
-        )
-        db_session.add(profile)
-        
-        # Create opportunity
-        opportunity = Opportunity(
-            title="Hackathon",
-            description="Coding competition",
-            type="hackathon",
-            deadline=datetime.utcnow() + timedelta(days=30),
-            application_link="https://example.com/apply",
-            tags=json.dumps(["coding"]),
-            required_skills=json.dumps(["python"]),
-            eligibility="undergraduate"
-        )
-        db_session.add(opportunity)
-        db_session.commit()
-        
-        # Participation history with successful hackathon completions
-        participation_history = [
-            {"opportunity_type": "hackathon", "status": "completed"},
-            {"opportunity_type": "hackathon", "status": "completed"},
-            {"opportunity_type": "scholarship", "status": "applied"}
-        ]
-        
-        # Calculate score
-        engine = RecommendationEngine(db_session)
-        score = engine.calculate_relevance_score(profile, opportunity, participation_history)
-        
-        # All interests match, all skills match, education matches (1.0), history boost (2/2 = 1.0)
-        # Score approx = 0.7*1.0 + 0.2*1.0 + 0.1*1.0 = 1.0
-        assert score > 0.8
-    
-    def test_history_boost_with_mixed_participation(self, db_session):
-        """Test scoring with mixed participation history."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
-        db_session.add(user)
-        db_session.flush()
-        
-        profile = Profile(
-            user_id=user.id,
-            interests=json.dumps(["coding"]),
-            skills=json.dumps(["python"]),
-            education_level="undergraduate"
-        )
-        db_session.add(profile)
-        
-        # Create opportunity
-        opportunity = Opportunity(
-            title="Internship",
-            description="Software internship",
-            type="internship",
-            deadline=datetime.utcnow() + timedelta(days=30),
-            application_link="https://example.com/apply",
-            tags=json.dumps(["coding"]),
-            required_skills=json.dumps(["python"]),
-            eligibility="undergraduate"
-        )
-        db_session.add(opportunity)
-        db_session.commit()
-        
-        # Participation history with mixed results
-        participation_history = [
-            {"opportunity_type": "internship", "status": "completed"},
-            {"opportunity_type": "internship", "status": "applied"},
-            {"opportunity_type": "internship", "status": "rejected"}
-        ]
-        
-        # Calculate score
-        engine = RecommendationEngine(db_session)
-        score = engine.calculate_relevance_score(profile, opportunity, participation_history)
-        
-        # All interests match, all skills match, education matches (1.0), history boost (1/3 = 0.333)
-        assert score > 0.6
-    
+
+        # 1 interest match × 10 = 10
+        assert score >= 10.0
+
     def test_case_insensitive_matching(self, db_session):
-        """Test that matching is case-insensitive."""
-        # Create user profile with mixed case
-        user = User(email="test@example.com", password_hash="hashed")
+        """Test that interest matching is case-insensitive."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["Python", "Machine Learning"]),
             skills=json.dumps(["PYTHON", "TensorFlow"]),
-            education_level="Undergraduate"
+            education_level="Undergraduate",
         )
         db_session.add(profile)
-        
-        # Create opportunity with different case
+
         opportunity = Opportunity(
             title="AI Project",
             description="AI development",
@@ -307,35 +366,31 @@ class TestRecommendationScoringAlgorithm:
             application_link="https://example.com/apply",
             tags=json.dumps(["python", "machine learning"]),
             required_skills=json.dumps(["python", "tensorflow"]),
-            eligibility="undergraduate"
+            location_type="In-Person",
         )
         db_session.add(opportunity)
         db_session.commit()
-        
-        # Calculate score
+
         engine = RecommendationEngine(db_session)
         score = engine.calculate_relevance_score(profile, opportunity)
-        
-        # Should match despite case differences
-        # Score approx = 0.7*1.0 + 0.2*1.0 + 0.1*0.0 = 0.9
-        assert score > 0.6
-    
+
+        # 2 interest matches × 10 = 20 (case insensitive)
+        assert score >= 20.0
+
     def test_empty_user_interests(self, db_session):
         """Test scoring when user has no interests."""
-        # Create user profile with no interests
-        user = User(email="test@example.com", password_hash="hashed")
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps([]),
             skills=json.dumps(["python"]),
-            education_level="undergraduate"
+            education_level="undergraduate",
         )
         db_session.add(profile)
-        
-        # Create opportunity
+
         opportunity = Opportunity(
             title="Hackathon",
             description="Coding event",
@@ -344,111 +399,69 @@ class TestRecommendationScoringAlgorithm:
             application_link="https://example.com/apply",
             tags=json.dumps(["coding", "python"]),
             required_skills=json.dumps(["python"]),
-            eligibility="undergraduate"
+            location_type="Online",
         )
         db_session.add(opportunity)
         db_session.commit()
-        
-        # Calculate score
+
         engine = RecommendationEngine(db_session)
         score = engine.calculate_relevance_score(profile, opportunity)
-        
-        # No interests but skills match. ML score will be partial.
-        # Score will be around 0.5 to 0.8 depending on TF-IDF
-        assert 0.4 < score < 0.9
-    
-    def test_empty_user_skills(self, db_session):
-        """Test scoring when user has no skills but opportunity requires skills."""
-        # Create user profile with no skills
-        user = User(email="test@example.com", password_hash="hashed")
+
+        # No interest matches → 0 interest points, +5 online bonus
+        assert score == 5.0
+
+    def test_combined_scoring(self, db_session):
+        """Test the full scoring formula with all bonuses active."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
-            interests=json.dumps(["coding"]),
+            interests=json.dumps(["ai", "web dev"]),
             skills=json.dumps([]),
-            education_level="undergraduate"
+            education_level="B.Tech",
         )
         db_session.add(profile)
-        
-        # Create opportunity that requires skills
+
         opportunity = Opportunity(
-            title="Advanced Hackathon",
-            description="For experienced developers",
+            title="AI+Web Hackathon",
+            description="Build AI web apps",
             type="hackathon",
-            deadline=datetime.utcnow() + timedelta(days=30),
+            deadline=datetime.utcnow() + timedelta(days=5),  # Urgent
             application_link="https://example.com/apply",
-            tags=json.dumps(["coding"]),
-            required_skills=json.dumps(["python", "java", "c++"]),
-            eligibility="undergraduate"
+            tags=json.dumps(["ai", "web dev", "cloud"]),
+            required_skills=json.dumps([]),
+            eligibility="B.Tech",
+            location_type="Online",  # Online bonus
         )
         db_session.add(opportunity)
         db_session.commit()
-        
-        # Calculate score
+
         engine = RecommendationEngine(db_session)
         score = engine.calculate_relevance_score(profile, opportunity)
-        
-        # All interests match but no skills metadata. ML score will be partial.
-        assert 0.3 < score < 0.8
-    
-    def test_scoring_formula_weights(self, db_session):
-        """Test that scoring formula applies correct weights."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
-        db_session.add(user)
-        db_session.flush()
-        
-        profile = Profile(
-            user_id=user.id,
-            interests=json.dumps(["test"]),
-            skills=json.dumps(["test"]),
-            education_level="undergraduate"
-        )
-        db_session.add(profile)
-        
-        # Create opportunity
-        opportunity = Opportunity(
-            title="Test Opportunity",
-            description="Test",
-            type="hackathon",
-            deadline=datetime.utcnow() + timedelta(days=30),
-            application_link="https://example.com/apply",
-            tags=json.dumps(["test"]),
-            required_skills=json.dumps(["test"]),
-            eligibility="undergraduate"
-        )
-        db_session.add(opportunity)
-        db_session.commit()
-        
-        # Calculate score
-        engine = RecommendationEngine(db_session)
-        score = engine.calculate_relevance_score(profile, opportunity)
-        
-        # Verify formula: 0.7*1.0 + 0.2*1.0 + 0.1*0.0 = 0.9
-        assert score > 0.6
+
+        # 2 interest matches × 10 = 20, Online = +5, Urgency = +5 → 30
+        assert score == 30.0
 
 
 class TestGenerateRecommendations:
     """Unit tests for the generate_recommendations method."""
-    
+
     def test_generate_recommendations_basic(self, db_session):
-        """Test basic recommendation generation."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
+        """Test basic recommendation generation returns sorted results."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["python", "data science"]),
             skills=json.dumps(["python", "sql"]),
-            education_level="undergraduate"
+            education_level="undergraduate",
         )
         db_session.add(profile)
-        
-        # Create multiple opportunities with different relevance
+
         opp1 = Opportunity(
             title="Python Data Science Internship",
             description="Work with data",
@@ -458,9 +471,10 @@ class TestGenerateRecommendations:
             tags=json.dumps(["python", "data science"]),
             required_skills=json.dumps(["python", "sql"]),
             eligibility="undergraduate",
-            status="active"
+            location_type="Online",
+            status="active",
         )
-        
+
         opp2 = Opportunity(
             title="Web Development Hackathon",
             description="Build web apps",
@@ -470,54 +484,56 @@ class TestGenerateRecommendations:
             tags=json.dumps(["javascript", "web"]),
             required_skills=json.dumps(["javascript", "html"]),
             eligibility="undergraduate",
-            status="active"
+            location_type="In-Person",
+            status="active",
         )
-        
+
         opp3 = Opportunity(
             title="Python Workshop",
             description="Learn Python",
             type="skill_program",
-            deadline=datetime.utcnow() + timedelta(days=15),
+            deadline=datetime.utcnow() + timedelta(days=5),  # Urgent
             application_link="https://example.com/apply3",
             tags=json.dumps(["python"]),
             required_skills=json.dumps(["python"]),
             eligibility="undergraduate",
-            status="active"
+            location_type="In-Person",
+            status="active",
         )
-        
+
         db_session.add_all([opp1, opp2, opp3])
         db_session.commit()
-        
-        # Generate recommendations
+
         engine = RecommendationEngine(db_session)
         recommendations = engine.generate_recommendations(user.id, limit=10)
-        
-        # Should return all 3 opportunities
+
+        # Should return all 3
         assert len(recommendations) == 3
-        
+
         # Should be sorted by score descending
         scores = [score for _, score in recommendations]
         assert scores == sorted(scores, reverse=True)
-        
-        # First recommendation should be the best match (opp1)
+
+        # opp1 should be first: 2 matches × 10 = 20 + Online 5 = 25
+        # opp3 should be second: 1 match × 10 = 10 + Urgency 5 = 15
+        # opp2 should be last: 0 matches = 0
         assert recommendations[0][0].id == opp1.id
-    
+        assert recommendations[2][0].id == opp2.id
+
     def test_generate_recommendations_with_limit(self, db_session):
-        """Test recommendation generation with limit."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
+        """Test recommendation generation respects limit."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["coding"]),
             skills=json.dumps(["python"]),
-            education_level="undergraduate"
+            education_level="undergraduate",
         )
         db_session.add(profile)
-        
-        # Create 5 opportunities
+
         for i in range(5):
             opp = Opportunity(
                 title=f"Opportunity {i}",
@@ -528,35 +544,31 @@ class TestGenerateRecommendations:
                 tags=json.dumps(["coding"]),
                 required_skills=json.dumps(["python"]),
                 eligibility="undergraduate",
-                status="active"
+                location_type="Online",
+                status="active",
             )
             db_session.add(opp)
-        
         db_session.commit()
-        
-        # Generate recommendations with limit of 3
+
         engine = RecommendationEngine(db_session)
         recommendations = engine.generate_recommendations(user.id, limit=3)
-        
-        # Should return only 3 opportunities
+
         assert len(recommendations) == 3
-    
+
     def test_generate_recommendations_excludes_archived(self, db_session):
-        """Test that archived opportunities are excluded from recommendations."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
+        """Test that archived opportunities are not returned."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["python"]),
             skills=json.dumps(["python"]),
-            education_level="undergraduate"
+            education_level="undergraduate",
         )
         db_session.add(profile)
-        
-        # Create active opportunity
+
         opp1 = Opportunity(
             title="Active Opportunity",
             description="Active",
@@ -566,10 +578,10 @@ class TestGenerateRecommendations:
             tags=json.dumps(["python"]),
             required_skills=json.dumps(["python"]),
             eligibility="undergraduate",
-            status="active"
+            location_type="Online",
+            status="active",
         )
-        
-        # Create archived opportunity
+
         opp2 = Opportunity(
             title="Archived Opportunity",
             description="Archived",
@@ -579,82 +591,71 @@ class TestGenerateRecommendations:
             tags=json.dumps(["python"]),
             required_skills=json.dumps(["python"]),
             eligibility="undergraduate",
-            status="archived"
+            location_type="Online",
+            status="archived",
         )
-        
+
         db_session.add_all([opp1, opp2])
         db_session.commit()
-        
-        # Generate recommendations
+
         engine = RecommendationEngine(db_session)
         recommendations = engine.generate_recommendations(user.id, limit=10)
-        
-        # Should return only the active opportunity
+
         assert len(recommendations) == 1
         assert recommendations[0][0].id == opp1.id
-    
+
     def test_generate_recommendations_empty_profile(self, db_session):
-        """Test recommendation generation for non-existent user."""
-        # Generate recommendations for non-existent user
+        """Test that non-existent user returns empty list."""
         engine = RecommendationEngine(db_session)
         recommendations = engine.generate_recommendations("non-existent-id", limit=10)
-        
-        # Should return empty list
         assert recommendations == []
-    
+
     def test_generate_recommendations_no_opportunities(self, db_session):
-        """Test recommendation generation when no opportunities exist."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
+        """Test that empty DB returns empty list."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["python"]),
             skills=json.dumps(["python"]),
-            education_level="undergraduate"
+            education_level="undergraduate",
         )
         db_session.add(profile)
         db_session.commit()
-        
-        # Generate recommendations
+
         engine = RecommendationEngine(db_session)
         recommendations = engine.generate_recommendations(user.id, limit=10)
-        
-        # Should return empty list
         assert recommendations == []
-    
+
     def test_generate_recommendations_ranking_order(self, db_session):
-        """Test that recommendations are properly ranked by relevance score."""
-        # Create user profile
-        user = User(email="test@example.com", password_hash="hashed")
+        """Test that recommendations are ranked high → medium → low."""
+        user = User(email="test@example.com")
         db_session.add(user)
         db_session.flush()
-        
+
         profile = Profile(
             user_id=user.id,
             interests=json.dumps(["python", "machine learning", "ai"]),
             skills=json.dumps(["python", "tensorflow"]),
-            education_level="undergraduate"
+            education_level="undergraduate",
         )
         db_session.add(profile)
-        
-        # Create opportunities with different match levels
-        # High match: all interests and skills match
+
         opp_high = Opportunity(
             title="Perfect Match",
             description="Perfect match opportunity",
             type="internship",
-            deadline=datetime.utcnow() + timedelta(days=30),
+            deadline=datetime.utcnow() + timedelta(days=5),  # Urgent
             application_link="https://example.com/high",
             tags=json.dumps(["python", "machine learning", "ai"]),
             required_skills=json.dumps(["python", "tensorflow"]),
             eligibility="undergraduate",
-            status="active"
+            location_type="Online",
+            status="active",
         )
-        
-        # Medium match: some interests and skills match
+
         opp_medium = Opportunity(
             title="Medium Match",
             description="Medium match opportunity",
@@ -664,10 +665,10 @@ class TestGenerateRecommendations:
             tags=json.dumps(["python", "web"]),
             required_skills=json.dumps(["python"]),
             eligibility="undergraduate",
-            status="active"
+            location_type="In-Person",
+            status="active",
         )
-        
-        # Low match: minimal overlap
+
         opp_low = Opportunity(
             title="Low Match",
             description="Low match opportunity",
@@ -677,24 +678,24 @@ class TestGenerateRecommendations:
             tags=json.dumps(["biology", "chemistry"]),
             required_skills=json.dumps(["lab work"]),
             eligibility="undergraduate",
-            status="active"
+            location_type="In-Person",
+            status="active",
         )
-        
-        db_session.add_all([opp_low, opp_medium, opp_high])  # Add in random order
+
+        db_session.add_all([opp_low, opp_medium, opp_high])
         db_session.commit()
-        
-        # Generate recommendations
+
         engine = RecommendationEngine(db_session)
         recommendations = engine.generate_recommendations(user.id, limit=10)
-        
-        # Should return all 3 opportunities
+
         assert len(recommendations) == 3
-        
-        # Should be ranked: high, medium, low
+
+        # High: 3×10 + Online(5) + Urgency(5) = 40
+        # Medium: 1×10 = 10
+        # Low: 0×10 = 0
         assert recommendations[0][0].id == opp_high.id
         assert recommendations[1][0].id == opp_medium.id
         assert recommendations[2][0].id == opp_low.id
-        
-        # Verify scores are in descending order
+
         assert recommendations[0][1] > recommendations[1][1]
         assert recommendations[1][1] > recommendations[2][1]
