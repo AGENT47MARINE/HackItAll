@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from services.opportunity_service import OpportunityService, ValidationError
 from services.recommendation_service import RecommendationEngine
-from api.auth import get_current_user, get_current_active_user
+from api.auth import get_current_user, get_current_active_user, get_current_admin_user
 
 
 # Router
@@ -282,7 +282,7 @@ async def get_recommendations(
 class ScrapeRequest(BaseModel):
     url: str = Field(..., min_length=1, description="URL of the hackathon to scrape")
 
-@router.post("/opportunities/scrape", response_model=OpportunityResponse)
+@router.post("/opportunities/scrape-url", response_model=OpportunityResponse)
 async def scrape_opportunity(
     request: ScrapeRequest,
     current_user_id: str = Depends(get_current_user), # Allow users to submit hackathons
@@ -338,13 +338,15 @@ async def scrape_opportunity(
 @router.post("/admin/opportunities", response_model=OpportunityResponse, status_code=status.HTTP_201_CREATED)
 async def create_opportunity(
     request: CreateOpportunityRequest,
-    current_user_id: str = Depends(get_current_active_user),
+    current_user_id: str = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
     """Create a new opportunity (admin only).
     
     This endpoint allows administrators to create new opportunity listings.
     All required fields must be provided and will be validated.
+    
+    Requires admin privileges - user must be in ADMIN_USER_IDS environment variable.
     
     Args:
         request: Opportunity creation data
@@ -355,7 +357,7 @@ async def create_opportunity(
         Created opportunity data
         
     Raises:
-        HTTPException: If validation fails or user is not admin
+        HTTPException: If validation fails or user is not admin (403)
     """
     opportunity_service = OpportunityService(db)
     
@@ -384,13 +386,15 @@ async def create_opportunity(
 async def update_opportunity(
     opportunity_id: str,
     request: UpdateOpportunityRequest,
-    current_user_id: str = Depends(get_current_active_user),
+    current_user_id: str = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
     """Update an opportunity (admin only).
     
     This endpoint allows administrators to update existing opportunity listings.
     Only provided fields will be updated; others remain unchanged.
+    
+    Requires admin privileges - user must be in ADMIN_USER_IDS environment variable.
     
     Args:
         opportunity_id: Opportunity ID to update
@@ -402,7 +406,7 @@ async def update_opportunity(
         Updated opportunity data
         
     Raises:
-        HTTPException: If validation fails, opportunity not found, or user is not admin
+        HTTPException: If validation fails (400), opportunity not found (404), or user is not admin (403)
     """
     opportunity_service = OpportunityService(db)
     
@@ -444,7 +448,8 @@ class BatchScrapeResponse(BaseModel):
 
 @router.post("/admin/scrape-batch", response_model=BatchScrapeResponse)
 async def batch_scrape(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_id: str = Depends(get_current_admin_user)
 ):
     """Trigger batch scraping from Unstop and Devpost.
 
