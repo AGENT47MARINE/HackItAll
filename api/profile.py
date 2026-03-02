@@ -148,3 +148,46 @@ async def delete_profile(
         )
     
     return None
+
+
+
+@router.get("/export")
+async def export_user_data(
+    current_user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Export all user data (GDPR compliance).
+    
+    This endpoint allows users to download a complete copy of all their data
+    stored in the platform. This includes:
+    - Account information (email, phone, creation date)
+    - Profile data (interests, skills, education level, preferences)
+    - Tracked opportunities
+    - Participation history with notes
+    
+    The data is returned in JSON format for easy readability and portability.
+    
+    This endpoint fulfills GDPR Article 20 (Right to data portability) and
+    CCPA requirements for data access.
+    
+    Args:
+        current_user_id: Current user ID from authentication token
+        db: Database session
+        
+    Returns:
+        Complete user data export in JSON format
+        
+    Raises:
+        HTTPException: If user not found (404)
+    """
+    profile_service = ProfileService(db)
+    
+    export_data = profile_service.export_user_data(current_user_id)
+    
+    if not export_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User data not found"
+        )
+    
+    return export_data

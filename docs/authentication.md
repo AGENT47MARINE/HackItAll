@@ -2,91 +2,28 @@
 
 ## Overview
 
-The Opportunity Access Platform uses JWT (JSON Web Token) based authentication to secure API endpoints. This document describes how to register, login, and authenticate requests.
+The Opportunity Access Platform uses **Clerk** for authentication to secure API endpoints. Clerk provides enterprise-grade authentication with built-in security features, automatic token management, and session handling. This document describes how authentication works in the platform.
+
+## Authentication Flow
+
+1. **User Registration/Login**: Handled by Clerk's frontend components (embedded in the web/mobile app)
+2. **Token Generation**: Clerk automatically generates secure session tokens
+3. **Token Verification**: Backend verifies Clerk tokens on protected endpoints using Clerk's SDK
+4. **User Identification**: Clerk tokens contain user ID (`sub` claim) for database operations
+
+## Why Clerk?
+
+Clerk was chosen to replace the previous JWT implementation because it provides:
+- ✅ Automatic token rotation and refresh
+- ✅ Built-in security best practices
+- ✅ Session management across devices
+- ✅ Social login support (Google, GitHub, etc.)
+- ✅ Email verification and password reset flows
+- ✅ No need to manage JWT secrets or token expiration logic
 
 ## Endpoints
 
-### 1. Register a New User
-
-**Endpoint:** `POST /api/auth/register`
-
-**Description:** Create a new user account and receive an access token.
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "securepassword123",
-  "education_level": "undergraduate",
-  "interests": ["technology", "science"],
-  "skills": ["python", "javascript"],
-  "phone": "+1234567890",
-  "notification_email": true,
-  "notification_sms": false,
-  "low_bandwidth_mode": false
-}
-```
-
-**Required Fields:**
-- `email`: Valid email address
-- `password`: Minimum 8 characters
-- `education_level`: User's education level (cannot be empty)
-
-**Optional Fields:**
-- `interests`: Array of interest strings (default: [])
-- `skills`: Array of skill strings (default: [])
-- `phone`: Phone number for SMS notifications
-- `notification_email`: Enable email notifications (default: true)
-- `notification_sms`: Enable SMS notifications (default: false)
-- `low_bandwidth_mode`: Enable low bandwidth mode (default: false)
-
-**Response (201 Created):**
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "user@example.com"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request`: Validation error (invalid email, short password, missing required fields)
-- `409 Conflict`: Email already registered
-- `422 Unprocessable Entity`: Invalid request format
-
----
-
-### 2. Login
-
-**Endpoint:** `POST /api/auth/login`
-
-**Description:** Authenticate with email and password to receive an access token.
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "securepassword123"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "bearer",
-  "user_id": "550e8400-e29b-41d4-a716-446655440000",
-  "email": "user@example.com"
-}
-```
-
-**Error Responses:**
-- `401 Unauthorized`: Invalid email or password
-
----
-
-### 3. Get Current User
+### Get Current User
 
 **Endpoint:** `GET /api/auth/me`
 
@@ -94,13 +31,13 @@ The Opportunity Access Platform uses JWT (JSON Web Token) based authentication t
 
 **Headers:**
 ```
-Authorization: Bearer <access_token>
+Authorization: Bearer <clerk_session_token>
 ```
 
 **Response (200 OK):**
 ```json
 {
-  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "id": "user_2abc123xyz",
   "email": "user@example.com",
   "phone": "+1234567890",
   "interests": ["technology", "science"],
@@ -116,57 +53,54 @@ Authorization: Bearer <access_token>
 
 **Error Responses:**
 - `401 Unauthorized`: Invalid or expired token
-- `403 Forbidden`: No authentication token provided
 - `404 Not Found`: User profile not found
+- `500 Internal Server Error`: Clerk configuration error
 
 ---
 
 ## Using Authentication in Requests
 
-### Step 1: Register or Login
+### Frontend Integration
 
-First, obtain an access token by registering a new account or logging in:
+The frontend uses Clerk's React components for authentication:
 
-```bash
-# Register
-curl -X POST http://localhost:8000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "securepassword123",
-    "education_level": "undergraduate"
-  }'
+```javascript
+import { SignIn, SignUp, useAuth } from '@clerk/clerk-react';
 
-# Or Login
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "securepassword123"
-  }'
+// In your app
+function App() {
+  const { getToken } = useAuth();
+  
+  // Get token for API requests
+  const token = await getToken();
+  
+  // Use token in API calls
+  const response = await fetch('/api/auth/me', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+}
 ```
 
-### Step 2: Use the Token
+### API Requests
 
-Include the access token in the `Authorization` header for protected endpoints:
+Include the Clerk session token in the `Authorization` header for protected endpoints:
 
 ```bash
 curl -X GET http://localhost:8000/api/auth/me \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  -H "Authorization: Bearer <clerk_session_token>"
 ```
-
-### Token Expiration
-
-Access tokens expire after 30 minutes (configurable via `ACCESS_TOKEN_EXPIRE_MINUTES` in config). When a token expires, you'll receive a `401 Unauthorized` response. Simply login again to get a new token.
 
 ---
 
 ## Security Features
 
-1. **Password Hashing**: All passwords are hashed using bcrypt before storage
-2. **JWT Tokens**: Secure token-based authentication with expiration
-3. **HTTPS Required**: In production, always use HTTPS to protect tokens in transit
-4. **Token Validation**: All protected endpoints verify token authenticity and expiration
+1. **Clerk Token Verification**: All tokens are verified using Clerk's SDK
+2. **Automatic Token Rotation**: Clerk handles token refresh automatically
+3. **Session Management**: Clerk manages sessions across devices
+4. **HTTPS Required**: In production, always use HTTPS to protect tokens in transit
+5. **Password Hashing**: Passwords are managed securely by Clerk
 
 ---
 
@@ -175,57 +109,71 @@ Access tokens expire after 30 minutes (configurable via `ACCESS_TOKEN_EXPIRE_MIN
 The following endpoints require authentication (include `Authorization: Bearer <token>` header):
 
 - `GET /api/auth/me` - Get current user profile
-- All profile management endpoints (future)
-- All opportunity tracking endpoints (future)
-- All recommendation endpoints (future)
-
----
-
-## Example: Complete Authentication Flow
-
-```python
-import requests
-
-BASE_URL = "http://localhost:8000"
-
-# 1. Register a new user
-register_response = requests.post(
-    f"{BASE_URL}/api/auth/register",
-    json={
-        "email": "newuser@example.com",
-        "password": "securepass123",
-        "education_level": "undergraduate",
-        "interests": ["ai", "ml"],
-        "skills": ["python"]
-    }
-)
-
-token = register_response.json()["access_token"]
-
-# 2. Use the token to access protected endpoints
-headers = {"Authorization": f"Bearer {token}"}
-
-profile_response = requests.get(
-    f"{BASE_URL}/api/auth/me",
-    headers=headers
-)
-
-print(profile_response.json())
-```
+- All profile management endpoints
+- All opportunity tracking endpoints
+- All recommendation endpoints
 
 ---
 
 ## Configuration
 
-Authentication settings can be configured via environment variables:
+### Backend Configuration
 
-- `SECRET_KEY`: Secret key for JWT signing (change in production!)
-- `ALGORITHM`: JWT algorithm (default: HS256)
-- `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration time (default: 30)
+Set the Clerk secret key in your environment:
 
-Example `.env` file:
+```bash
+CLERK_SECRET_KEY=sk_test_...
 ```
-SECRET_KEY=your-secret-key-here-change-in-production
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+### Frontend Configuration
+
+Configure Clerk in your frontend app:
+
+```javascript
+import { ClerkProvider } from '@clerk/clerk-react';
+
+const clerkPubKey = process.env.REACT_APP_CLERK_PUBLISHABLE_KEY;
+
+<ClerkProvider publishableKey={clerkPubKey}>
+  <App />
+</ClerkProvider>
 ```
+
+---
+
+## Migration from JWT
+
+The platform previously used JWT-based authentication. Key changes:
+
+- ❌ **Removed**: Manual JWT token creation and verification
+- ❌ **Removed**: `/api/auth/register` and `/api/auth/login` endpoints
+- ❌ **Removed**: JWT configuration (`SECRET_KEY`, `ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES`)
+- ✅ **Added**: Clerk SDK integration
+- ✅ **Added**: Automatic token management
+- ✅ **Kept**: User lookup methods in `AuthService` for backward compatibility
+
+---
+
+## Troubleshooting
+
+### "CLERK_SECRET_KEY not configured"
+- Ensure `CLERK_SECRET_KEY` is set in your `.env` file
+- Restart the backend server after adding the key
+
+### "Could not validate credentials"
+- Check that the frontend is using the correct Clerk publishable key
+- Verify the token is being sent in the `Authorization` header
+- Ensure the token hasn't expired (Clerk handles this automatically)
+
+### "User profile not found"
+- The user exists in Clerk but not in the local database
+- Ensure the profile creation flow runs after Clerk authentication
+- Check that the user ID from Clerk matches the database user ID
+
+---
+
+## Resources
+
+- [Clerk Documentation](https://clerk.com/docs)
+- [Clerk Backend SDK](https://clerk.com/docs/backend-requests/handling/python)
+- [Clerk React SDK](https://clerk.com/docs/references/react/overview)

@@ -4,13 +4,13 @@ This document describes the profile management endpoints for the Opportunity Acc
 
 ## Authentication
 
-All profile management endpoints require authentication using a JWT bearer token. Include the token in the `Authorization` header:
+All profile management endpoints require authentication using a Clerk session token. Include the token in the `Authorization` header:
 
 ```
-Authorization: Bearer <your_token>
+Authorization: Bearer <clerk_session_token>
 ```
 
-You can obtain a token by registering or logging in through the authentication endpoints.
+The token is automatically managed by Clerk's frontend SDK.
 
 ## Endpoints
 
@@ -127,45 +127,16 @@ Creates a new user account and profile.
   "low_bandwidth_mode": false
 }
 ```
-
-**Response:** `201 Created`
-
-```json
-{
-  "access_token": "jwt-token",
-  "token_type": "bearer",
-  "user_id": "user-uuid",
-  "email": "user@example.com"
-}
-```
-
 ---
 
-### Login
+## Note on Authentication Endpoints
 
-**POST** `/api/auth/login`
+User registration and login are now handled by Clerk's authentication system. The platform no longer provides `/api/auth/register` or `/api/auth/login` endpoints. 
 
-Authenticates a user and returns an access token.
-
-**Request Body:**
-
-```json
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
-```
-
-**Response:** `200 OK`
-
-```json
-{
-  "access_token": "jwt-token",
-  "token_type": "bearer",
-  "user_id": "user-uuid",
-  "email": "user@example.com"
-}
-```
+For authentication:
+- Use Clerk's frontend components for sign-up and sign-in
+- Clerk automatically manages session tokens
+- See the [Authentication Documentation](./authentication.md) for details
 
 ---
 

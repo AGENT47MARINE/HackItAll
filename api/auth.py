@@ -6,7 +6,9 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from database import get_db
-from services.auth_service import AuthService, AuthenticationError
+class AuthenticationError(Exception):
+    """Exception raised for authentication errors."""
+    pass
 from services.profile_service import ProfileService, ValidationError
 
 
@@ -68,301 +70,110 @@ class UserResponse(BaseModel):
     updated_at: str
 
 
-# Dependency to get current user from token
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-):
-    """Dependency to extract and verify current user from JWT token.
+import os
+from clerk_backend_api import Clerk
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    """Validate Clerk JWT token and return user ID.
     
     Args:
-        credentials: HTTP authorization credentials
-        db: Database session
+        credentials: Bearer token from authorization header
         
     Returns:
-        User ID from token
+        String UUID/Subject of the authenticated Clerk user
         
     Raises:
-        HTTPException: If authentication fails
+        HTTPException: If token is missing, invalid, or expired
     """
-    auth_service = AuthService(db)
+    token = credentials.credentials
     
-    try:
-        token = credentials.credentials
-        payload = auth_service.verify_token(token)
-        user_id = payload["user_id"]
-        
-        # Verify user exists
-        user = auth_service.get_user_by_id(user_id)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        return user_id
-        
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-async def require_admin(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-):
-    """Dependency to verify current user has admin privileges.
-    
-    Args:
-        credentials: HTTP authorization credentials
-        db: Database session
-        
-    Returns:
-        User ID from token
-        
-    Raises:
-        HTTPException: If authentication fails or user is not admin
-    """
-    auth_service = AuthService(db)
-    
-    try:
-        token = credentials.credentials
-        payload = auth_service.verify_token(token)
-        user_id = payload["user_id"]
-        
-        # Verify user exists
-        user = auth_service.get_user_by_id(user_id)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        
-        # Check for admin role in token payload
-        # For now, we'll check if the payload has an 'is_admin' field
-        # In a production system, this would be stored in the database
-        is_admin = payload.get("is_admin", False)
-        
-        if not is_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin privileges required"
-            )
-        
-        return user_id
-        
-    except AuthenticationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-async def register(request: RegisterRequest, db: Session = Depends(get_db)):
-    """Register a new user and return access token.
-    
-    Args:
-        request: Registration request data
-        db: Database session
-        
-    Returns:
-        Access token and user information
-        
-    Raises:
-        HTTPException: If registration fails
-    """
-    profile_service = ProfileService(db)
-    auth_service = AuthService(db)
-    
-    try:
-        # Create profile (includes user creation)
-        profile_data = profile_service.create_profile(
-            email=request.email,
-            password=request.password,
-            education_level=request.education_level,
-            interests=request.interests,
-            skills=request.skills,
-            phone=request.phone,
-            notification_email=request.notification_email,
-            notification_sms=request.notification_sms,
-            low_bandwidth_mode=request.low_bandwidth_mode
-        )
-        
-        # Create access token
-        access_token = auth_service.create_access_token(
-            user_id=profile_data["id"],
-            email=profile_data["email"]
-        )
-        
-        return TokenResponse(
-            access_token=access_token,
-            user_id=profile_data["id"],
-            email=profile_data["email"]
-        )
-        
-    except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    except Exception as e:
-        # Handle duplicate email
-        if "already exists" in str(e).lower():
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already registered"
-            )
+    clerk_secret = os.getenv("CLERK_SECRET_KEY")
+    if not clerk_secret:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Registration failed"
+            detail="CLERK_SECRET_KEY not configured on server"
         )
-
-
-@router.post("/login", response_model=TokenResponse)
-async def login(request: LoginRequest, db: Session = Depends(get_db)):
-    """Authenticate user and return access token.
-    
-    Args:
-        request: Login request data
-        db: Database session
         
-    Returns:
-        Access token and user information
+    try:
+        clerk = Clerk(bearer_auth=clerk_secret)
+        # Verify the token natively using Clerk's SDK
+        # This checks the signature, expiration, and issuer automatically
+        token_payload = clerk.authenticate_request(
+            request=None, # SDK supports passing raw request, but we have the raw JWT string
+            header_token=token
+        )
         
-    Raises:
-        HTTPException: If authentication fails
-    """
-    auth_service = AuthService(db)
-    
-    # Authenticate user
-    user = auth_service.authenticate_user(request.email, request.password)
-    
-    if not user:
+        if not token_payload.is_signed_in or not token_payload.payload:
+             raise AuthenticationError("Invalid or expired session")
+             
+        # Extract the user ID from the verified token
+        # In Clerk, 'sub' is the unique user ID string
+        user_id = token_payload.payload.get("sub")
+        
+        if not user_id:
+             raise AuthenticationError("Token payload missing user identifier")
+             
+        return user_id
+        
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+def get_current_active_user(
+    current_user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> str:
+    """Get current active user (used as a dependency).
     
-    # Create access token
-    access_token = auth_service.create_access_token(
-        user_id=user.id,
-        email=user.email
-    )
-    
-    return TokenResponse(
-        access_token=access_token,
-        user_id=user.id,
-        email=user.email
-    )
+    Since Clerk handles email verification / banned status externally, 
+    we just pass through the user ID for our internal DB queries.
+    """
+    return current_user_id
 
 
-@router.post("/google", response_model=TokenResponse)
-async def google_auth(request: GoogleAuthRequest, db: Session = Depends(get_db)):
-    """Authenticate user with Google OAuth token.
+def get_current_admin_user(
+    current_user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+) -> str:
+    """Get current admin user (used as a dependency for admin-only endpoints).
+    
+    Checks if the current user has admin privileges. Admin status can be determined by:
+    1. Checking Clerk metadata for admin role
+    2. Checking a whitelist of admin user IDs
+    3. Checking a database admin flag
+    
+    For now, we'll use an environment variable whitelist approach.
     
     Args:
-        request: Google auth request with token
+        current_user_id: Current user ID from authentication token
         db: Database session
         
     Returns:
-        Access token and user information
+        User ID if user is admin
         
     Raises:
-        HTTPException: If authentication fails
+        HTTPException: If user is not an admin
     """
-    from google.oauth2 import id_token
-    from google.auth.transport import requests
     import os
     
-    auth_service = AuthService(db)
-    profile_service = ProfileService(db)
+    # Get admin user IDs from environment variable (comma-separated)
+    admin_ids = os.getenv("ADMIN_USER_IDS", "").split(",")
+    admin_ids = [id.strip() for id in admin_ids if id.strip()]
     
-    try:
-        # Verify Google token
-        google_client_id = os.getenv('GOOGLE_CLIENT_ID')
-        if not google_client_id:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Google OAuth not configured"
-            )
-        
-        idinfo = id_token.verify_oauth2_token(
-            request.token, 
-            requests.Request(), 
-            google_client_id
-        )
-        
-        # Extract user info from Google token
-        email = idinfo.get('email')
-        if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email not provided by Google"
-            )
-        
-        # Check if user exists
-        user = auth_service.get_user_by_email(email)
-        
-        if user:
-            # User exists, log them in
-            access_token = auth_service.create_access_token(
-                user_id=user.id,
-                email=user.email
-            )
-            
-            return TokenResponse(
-                access_token=access_token,
-                user_id=user.id,
-                email=user.email
-            )
-        else:
-            # New user, create account
-            # For Google OAuth, we'll use a random password since they won't use it
-            import secrets
-            random_password = secrets.token_urlsafe(32)
-            
-            profile_data = profile_service.create_profile(
-                email=email,
-                password=random_password,
-                education_level=request.education_level or "Not specified",
-                interests=request.interests or [],
-                skills=request.skills or [],
-                notification_email=True,
-                notification_sms=False,
-                low_bandwidth_mode=False
-            )
-            
-            # Create access token
-            access_token = auth_service.create_access_token(
-                user_id=profile_data["id"],
-                email=profile_data["email"]
-            )
-            
-            return TokenResponse(
-                access_token=access_token,
-                user_id=profile_data["id"],
-                email=profile_data["email"]
-            )
-            
-    except ValueError as e:
-        # Invalid token
+    if current_user_id not in admin_ids:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid Google token: {str(e)}"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required for this operation"
         )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Google authentication failed: {str(e)}"
-        )
+    
+    return current_user_id
+
+
+# User identity and standard login endpoints are fully managed by Clerk externally.
+# Only the profile retrieval relies on the internal API relying on `get_current_user`.
 
 
 @router.get("/me", response_model=UserResponse)

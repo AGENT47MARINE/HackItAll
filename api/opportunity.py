@@ -298,7 +298,14 @@ async def scrape_opportunity(
     dispatcher = ScraperDispatcher()
     
     try:
-        # Run Playwright + Ollama
+        # 1. Search: Check if the URL already exists in our DB
+        from models.opportunity import Opportunity
+        existing = db.query(Opportunity).filter(Opportunity.source_url == request.url).first()
+        if existing:
+            opportunity_service = OpportunityService(db)
+            return opportunity_service._format_opportunity_response(existing)
+
+        # 2. Scrape: Only run Playwright + Ollama if not found
         extracted_data = dispatcher.execute_scrape(request.url)
         
         # Parse the loose date string from AI into a strict datetime
@@ -309,7 +316,7 @@ async def scrape_opportunity(
             except:
                  pass
                  
-        # Save to DB
+        # 3. Store: Save new results to DB
         opportunity_service = OpportunityService(db)
         opportunity = opportunity_service.create_opportunity(
             title=extracted_data.get("title", "Unknown Hackathon"),
@@ -320,10 +327,11 @@ async def scrape_opportunity(
             image_url=extracted_data.get("image_url"),
             tags=extracted_data.get("tags", []),
             required_skills=extracted_data.get("required_skills", []),
-            eligibility=extracted_data.get("eligibility")
+            eligibility=extracted_data.get("eligibility"),
+            source_url=request.url # Explicitly set source_url for future checks
         )
         
-        return OpportunityResponse(**opportunity)
+        return opportunity
         
     except Exception as e:
         print(f"Scraping API Error: {e}")

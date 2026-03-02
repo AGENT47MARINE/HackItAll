@@ -35,7 +35,7 @@ opportunity-access-platform/
 ### Backend
 - **Framework**: FastAPI (Python)
 - **Database**: SQLAlchemy with SQLite (easily switchable to PostgreSQL)
-- **Authentication**: JWT tokens with bcrypt password hashing
+- **Authentication**: Clerk authentication with bcrypt password hashing
 - **Testing**: pytest with 179+ comprehensive tests
 - **API Documentation**: Auto-generated OpenAPI/Swagger docs
 
@@ -164,7 +164,7 @@ This project was built using spec-driven development. The complete specification
 
 Edit `config.py` or set environment variables:
 - `DATABASE_URL` - Database connection string
-- `SECRET_KEY` - JWT secret key
+- `SECRET_KEY` - Secret key for password hashing
 - `DEBUG` - Debug mode (default: True)
 
 ### Mobile App Configuration

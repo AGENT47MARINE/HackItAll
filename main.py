@@ -1,5 +1,6 @@
 """Main application entry point."""
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +11,18 @@ from api.auth import router as auth_router
 from api.profile import router as profile_router
 from api.opportunity import router as opportunity_router
 from api.tracking import router as tracking_router
+from api.webhook import router as webhook_router
+from api.educational import router as educational_router
+from api.utility import router as utility_router
+from middleware.error_handler import setup_error_handlers
+from middleware.rate_limiter import RateLimiter
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -17,8 +30,16 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup
     init_db()
+    
+    # Start background scheduler
+    from scheduler import start_scheduler
+    scheduler = start_scheduler()
+    
     yield
-    # Shutdown (if needed)
+    
+    # Shutdown
+    scheduler.shutdown()
+    logger.info("Background scheduler stopped")
 
 
 # Create FastAPI application
@@ -39,11 +60,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add rate limiting middleware
+app.add_middleware(RateLimiter, requests_per_minute=100)
+
+# Setup error handlers
+setup_error_handlers(app)
+
 # Include routers
 app.include_router(auth_router)
 app.include_router(profile_router)
 app.include_router(opportunity_router)
 app.include_router(tracking_router)
+app.include_router(webhook_router)
+app.include_router(educational_router)
+app.include_router(utility_router)
 
 
 @app.get("/")
