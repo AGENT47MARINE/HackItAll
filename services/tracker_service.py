@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 
 from models.tracking import TrackedOpportunity
 from models.opportunity import Opportunity
+from utils.formatters import ResponseFormatter
 
 
 class TrackerService:
@@ -22,6 +23,8 @@ class TrackerService:
     def save_opportunity(self, user_id: str, opportunity_id: str) -> Dict[str, Any]:
         """Save an opportunity to the user's tracked list.
         
+        Automatically schedules deadline reminders (7 days and 24 hours before deadline).
+        
         Args:
             user_id: User ID
             opportunity_id: Opportunity ID to track
@@ -33,6 +36,8 @@ class TrackerService:
             ValueError: If opportunity doesn't exist
             IntegrityError: If opportunity is already tracked by user
         """
+        from services.notification_service import NotificationService
+        
         # Verify opportunity exists
         opportunity = self.db.query(Opportunity).filter(
             Opportunity.id == opportunity_id
@@ -58,6 +63,15 @@ class TrackerService:
             opportunity.tracked_count += 1
             
             self.db.commit()
+            
+            # Schedule deadline reminders if not expired
+            if not is_expired:
+                notification_service = NotificationService(self.db)
+                notification_service.schedule_deadline_reminders(
+                    user_id=user_id,
+                    opportunity_id=opportunity_id,
+                    deadline=opportunity.deadline
+                )
             
             return self._format_tracked_opportunity(tracked, opportunity)
             
@@ -99,6 +113,8 @@ class TrackerService:
     def remove_tracked_opportunity(self, user_id: str, opportunity_id: str) -> bool:
         """Remove a tracked opportunity from the user's list.
         
+        Also cancels any scheduled reminders for this opportunity.
+        
         Args:
             user_id: User ID
             opportunity_id: Opportunity ID to remove
@@ -106,6 +122,8 @@ class TrackerService:
         Returns:
             True if removed successfully, False if not found
         """
+        from services.notification_service import NotificationService
+        
         tracked = self.db.query(TrackedOpportunity).filter(
             TrackedOpportunity.user_id == user_id,
             TrackedOpportunity.opportunity_id == opportunity_id
@@ -122,6 +140,10 @@ class TrackerService:
         ).first()
         if opportunity and opportunity.tracked_count > 0:
             opportunity.tracked_count -= 1
+        
+        # Cancel any scheduled reminders
+        notification_service = NotificationService(self.db)
+        notification_service.cancel_opportunity_reminders(user_id, opportunity_id)
             
         self.db.commit()
         
@@ -162,18 +184,13 @@ class TrackerService:
         Returns:
             Dictionary containing formatted tracked opportunity data
         """
+        # Use centralized formatter
+        opportunity_data = ResponseFormatter.format_opportunity_response(opportunity)
+        
         return {
             "user_id": tracked.user_id,
             "opportunity_id": tracked.opportunity_id,
             "saved_at": tracked.saved_at.isoformat(),
             "is_expired": tracked.is_expired,
-            "opportunity": {
-                "id": opportunity.id,
-                "title": opportunity.title,
-                "description": opportunity.description,
-                "type": opportunity.type,
-                "deadline": opportunity.deadline.isoformat(),
-                "application_link": opportunity.application_link,
-                "status": opportunity.status
-            }
+            "opportunity": opportunity_data
         }

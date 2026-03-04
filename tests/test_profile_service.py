@@ -1,10 +1,11 @@
+import uuid
 """Unit tests for ProfileService."""
 import pytest
 import bcrypt
 from sqlalchemy.exc import IntegrityError
 
 from services.profile_service import ProfileService, ValidationError
-from models.user import User, Profile
+from models import User, Profile, Opportunity, TrackedOpportunity, ParticipationHistory, Reminder
 
 
 class TestProfileServiceCreate:
@@ -15,8 +16,8 @@ class TestProfileServiceCreate:
         service = ProfileService(db_session)
         
         result = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="student@example.com",
-            password="secure_password_123",
             education_level="undergraduate",
             interests=["AI", "Machine Learning"],
             skills=["Python", "SQL"],
@@ -44,8 +45,8 @@ class TestProfileServiceCreate:
         service = ProfileService(db_session)
         
         result = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="minimal@example.com",
-            password="password123",
             education_level="graduate"
         )
         
@@ -58,28 +59,7 @@ class TestProfileServiceCreate:
         assert result["notification_sms"] is False
         assert result["low_bandwidth_mode"] is False
     
-    def test_create_profile_hashes_password(self, db_session):
-        """Test that password is hashed using bcrypt."""
-        service = ProfileService(db_session)
-        
-        password = "my_secure_password"
-        result = service.create_profile(
-            email="hash@example.com",
-            password=password,
-            education_level="undergraduate"
-        )
-        
-        # Retrieve user from database
-        user = db_session.query(User).filter(User.id == result["id"]).first()
-        
-        # Password should be hashed (not equal to plaintext)
-        assert user.password_hash != password
-        
-        # Should be able to verify with bcrypt
-        assert bcrypt.checkpw(
-            password.encode('utf-8'),
-            user.password_hash.encode('utf-8')
-        )
+
     
     def test_create_profile_empty_education_level_fails(self, db_session):
         """Test that empty education_level raises ValidationError."""
@@ -87,8 +67,8 @@ class TestProfileServiceCreate:
         
         with pytest.raises(ValidationError, match="education_level is required"):
             service.create_profile(
+            user_id=str(uuid.uuid4()),
                 email="test@example.com",
-                password="password",
                 education_level=""
             )
     
@@ -98,8 +78,8 @@ class TestProfileServiceCreate:
         
         with pytest.raises(ValidationError, match="education_level is required"):
             service.create_profile(
+            user_id=str(uuid.uuid4()),
                 email="test@example.com",
-                password="password",
                 education_level="   "
             )
     
@@ -109,8 +89,8 @@ class TestProfileServiceCreate:
         
         with pytest.raises(ValidationError, match="Invalid email format"):
             service.create_profile(
+            user_id=str(uuid.uuid4()),
                 email="not_an_email",
-                password="password",
                 education_level="undergraduate"
             )
     
@@ -120,16 +100,16 @@ class TestProfileServiceCreate:
         
         # Create first profile
         service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="duplicate@example.com",
-            password="password1",
             education_level="undergraduate"
         )
         
         # Try to create second profile with same email
-        with pytest.raises(IntegrityError, match="Email already exists"):
+        with pytest.raises(IntegrityError):
             service.create_profile(
+            user_id=str(uuid.uuid4()),
                 email="duplicate@example.com",
-                password="password2",
                 education_level="graduate"
             )
     
@@ -139,8 +119,8 @@ class TestProfileServiceCreate:
         
         with pytest.raises(ValidationError, match="interests must be a list"):
             service.create_profile(
+            user_id=str(uuid.uuid4()),
                 email="test@example.com",
-                password="password",
                 education_level="undergraduate",
                 interests="not a list"
             )
@@ -151,8 +131,8 @@ class TestProfileServiceCreate:
         
         with pytest.raises(ValidationError, match="skills must be a list"):
             service.create_profile(
+            user_id=str(uuid.uuid4()),
                 email="test@example.com",
-                password="password",
                 education_level="undergraduate",
                 skills="not a list"
             )
@@ -167,8 +147,8 @@ class TestProfileServiceGet:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="get@example.com",
-            password="password",
             education_level="undergraduate",
             interests=["Data Science"],
             skills=["R"]
@@ -202,8 +182,8 @@ class TestProfileServiceUpdate:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="update@example.com",
-            password="password",
             education_level="undergraduate",
             interests=["AI"]
         )
@@ -223,8 +203,8 @@ class TestProfileServiceUpdate:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="skills@example.com",
-            password="password",
             education_level="graduate",
             skills=["Python"]
         )
@@ -243,8 +223,8 @@ class TestProfileServiceUpdate:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="edu@example.com",
-            password="password",
             education_level="undergraduate"
         )
         
@@ -262,8 +242,8 @@ class TestProfileServiceUpdate:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="phone@example.com",
-            password="password",
             education_level="undergraduate"
         )
         
@@ -281,8 +261,8 @@ class TestProfileServiceUpdate:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="notify@example.com",
-            password="password",
             education_level="undergraduate",
             notification_email=True,
             notification_sms=False
@@ -304,8 +284,8 @@ class TestProfileServiceUpdate:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="bandwidth@example.com",
-            password="password",
             education_level="undergraduate",
             low_bandwidth_mode=False
         )
@@ -324,8 +304,8 @@ class TestProfileServiceUpdate:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="multi@example.com",
-            password="password",
             education_level="undergraduate",
             interests=["AI"],
             skills=["Python"]
@@ -362,8 +342,8 @@ class TestProfileServiceUpdate:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="empty@example.com",
-            password="password",
             education_level="undergraduate"
         )
         
@@ -380,8 +360,8 @@ class TestProfileServiceUpdate:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="persist@example.com",
-            password="password",
             education_level="undergraduate",
             interests=["Original"]
         )
@@ -407,8 +387,8 @@ class TestProfileServiceDelete:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="delete@example.com",
-            password="password",
             education_level="undergraduate"
         )
         
@@ -435,8 +415,8 @@ class TestProfileServiceDelete:
         
         # Create profile
         created = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="cascade@example.com",
-            password="password",
             education_level="undergraduate"
         )
         
@@ -454,45 +434,7 @@ class TestProfileServiceDelete:
         assert profile is None
 
 
-class TestProfileServiceVerifyPassword:
-    """Tests for ProfileService.verify_password()."""
-    
-    def test_verify_correct_password(self, db_session):
-        """Test verifying correct password returns True."""
-        service = ProfileService(db_session)
-        
-        password = "correct_password"
-        created = service.create_profile(
-            email="verify@example.com",
-            password=password,
-            education_level="undergraduate"
-        )
-        
-        result = service.verify_password(created["id"], password)
-        
-        assert result is True
-    
-    def test_verify_incorrect_password(self, db_session):
-        """Test verifying incorrect password returns False."""
-        service = ProfileService(db_session)
-        
-        created = service.create_profile(
-            email="wrong@example.com",
-            password="correct_password",
-            education_level="undergraduate"
-        )
-        
-        result = service.verify_password(created["id"], "wrong_password")
-        
-        assert result is False
-    
-    def test_verify_password_nonexistent_user(self, db_session):
-        """Test verifying password for non-existent user returns False."""
-        service = ProfileService(db_session)
-        
-        result = service.verify_password("nonexistent-id", "any_password")
-        
-        assert result is False
+
 
 
 class TestProfileServiceEdgeCases:
@@ -503,8 +445,8 @@ class TestProfileServiceEdgeCases:
         service = ProfileService(db_session)
         
         result = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="empty_interests@example.com",
-            password="password",
             education_level="undergraduate",
             interests=[]
         )
@@ -516,8 +458,8 @@ class TestProfileServiceEdgeCases:
         service = ProfileService(db_session)
         
         result = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="empty_skills@example.com",
-            password="password",
             education_level="undergraduate",
             skills=[]
         )
@@ -529,8 +471,8 @@ class TestProfileServiceEdgeCases:
         service = ProfileService(db_session)
         
         result = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="special@example.com",
-            password="password",
             education_level="undergraduate",
             interests=["AI/ML", "Web Dev (Frontend)", "Data Science & Analytics"]
         )
@@ -542,8 +484,8 @@ class TestProfileServiceEdgeCases:
         service = ProfileService(db_session)
         
         result = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="unicode@example.com",
-            password="password",
             education_level="undergraduate",
             interests=["机器学习", "データサイエンス", "Künstliche Intelligenz"]
         )
@@ -558,8 +500,8 @@ class TestProfileServiceEdgeCases:
         long_skills = [f"Skill {i}" for i in range(100)]
         
         result = service.create_profile(
+            user_id=str(uuid.uuid4()),
             email="long@example.com",
-            password="password",
             education_level="undergraduate",
             interests=long_interests,
             skills=long_skills

@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 
 from services.tracker_service import TrackerService
-from models.tracking import TrackedOpportunity
-from models.opportunity import Opportunity
-from models.user import User, Profile
+from models import User, Profile, Opportunity, TrackedOpportunity, ParticipationHistory, Reminder
+from models import User, Profile, Opportunity, TrackedOpportunity, ParticipationHistory, Reminder
+from models import User, Profile, Opportunity, TrackedOpportunity, ParticipationHistory, Reminder
 
 
 class TestTrackerService:
@@ -21,8 +21,7 @@ class TestTrackerService:
     def sample_user(self, db_session):
         """Create a sample user for testing."""
         user = User(
-            email="test@example.com",
-            password_hash="hashed_password"
+            email="test@example.com"
         )
         db_session.add(user)
         
@@ -224,8 +223,8 @@ class TestTrackerService:
     def test_mark_as_expired_multiple_users(self, tracker_service, sample_opportunity, db_session):
         """Test marking an opportunity as expired affects all users tracking it."""
         # Create multiple users
-        user1 = User(email="user1@example.com", password_hash="hash1")
-        user2 = User(email="user2@example.com", password_hash="hash2")
+        user1 = User(email="user1@example.com")
+        user2 = User(email="user2@example.com")
         db_session.add_all([user1, user2])
         db_session.commit()
         

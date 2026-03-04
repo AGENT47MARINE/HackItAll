@@ -4,8 +4,10 @@ import bcrypt
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from email_validator import validate_email, EmailNotValidError
 
 from models.user import User, Profile
+from utils.formatters import ResponseFormatter
 
 
 class ValidationError(Exception):
@@ -23,19 +25,6 @@ class ProfileService:
             db_session: SQLAlchemy database session
         """
         self.db = db_session
-    
-    def _hash_password(self, password: str) -> str:
-        """Hash a password using bcrypt.
-        
-        Args:
-            password: Plain text password
-            
-        Returns:
-            Hashed password string
-        """
-        salt = bcrypt.gensalt()
-        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-        return hashed.decode('utf-8')
     
     def _validate_profile_data(self, education_level: Optional[str] = None, 
                               email: Optional[str] = None,
@@ -56,10 +45,13 @@ class ProfileService:
         if education_level is not None and not education_level.strip():
             raise ValidationError("education_level is required and cannot be empty")
         
-        # Validate email format if provided
+        # Validate email format using email-validator
         if email is not None:
-            if not email or '@' not in email or '.' not in email.split('@')[-1]:
-                raise ValidationError("Invalid email format")
+            try:
+                # We don't need to check deliverability for basic validation
+                validate_email(email, check_deliverability=False)
+            except EmailNotValidError as e:
+                raise ValidationError(f"Invalid email format: {str(e)}")
         
         # Validate interests and skills are lists if provided
         if interests is not None and not isinstance(interests, list):
@@ -68,18 +60,18 @@ class ProfileService:
         if skills is not None and not isinstance(skills, list):
             raise ValidationError("skills must be a list")
     
-    def create_profile(self, email: str, password: str, education_level: str,
+    def create_profile(self, user_id: str, email: str, education_level: str,
                       interests: Optional[List[str]] = None,
                       skills: Optional[List[str]] = None,
                       phone: Optional[str] = None,
                       notification_email: bool = True,
                       notification_sms: bool = False,
                       low_bandwidth_mode: bool = False) -> Dict[str, Any]:
-        """Create a new user profile.
+        """Create a new user profile (Synced from Clerk).
         
         Args:
+            user_id: The explicit ID provided by Clerk Webhooks
             email: User email address
-            password: Plain text password (will be hashed)
             education_level: User's education level (required)
             interests: List of user interests (default: empty list)
             skills: List of user skills (default: empty list)
@@ -109,19 +101,16 @@ class ProfileService:
             skills=skills
         )
         
-        # Hash password
-        password_hash = self._hash_password(password)
-        
-        # Create user
+        # Create user linked to Clerk ID
         user = User(
+            id=user_id,
             email=email,
-            password_hash=password_hash,
             phone=phone
         )
         
         try:
             self.db.add(user)
-            self.db.flush()  # Get user ID
+            self.db.flush()  # Get user ID constraints registered
             
             # Create profile
             profile = Profile(
@@ -139,9 +128,9 @@ class ProfileService:
             
             return self._format_profile_response(user, profile)
             
-        except IntegrityError as e:
+        except (IntegrityError, ValidationError, Exception):
             self.db.rollback()
-            raise IntegrityError("Email already exists", params=None, orig=e.orig)
+            raise
     
     def get_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get a user profile by user ID.
@@ -245,6 +234,110 @@ class ProfileService:
         self.db.commit()
         
         return True
+
+    def export_user_data(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Export all user data in a readable format (GDPR compliance).
+
+        This method collects all data associated with a user including:
+        - Profile information (email, interests, skills, preferences)
+        - Tracked opportunities
+        - Participation history
+        - Account metadata
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Dictionary containing all user data in readable format, or None if user not found
+        """
+        from models.tracking import TrackedOpportunity, ParticipationHistory
+        from models.opportunity import Opportunity
+        from datetime import datetime
+
+        # Get user and profile
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return None
+
+        profile = self.db.query(Profile).filter(Profile.user_id == user_id).first()
+        if not profile:
+            return None
+
+        # Get tracked opportunities
+        tracked = self.db.query(TrackedOpportunity, Opportunity).join(
+            Opportunity,
+            TrackedOpportunity.opportunity_id == Opportunity.id
+        ).filter(
+            TrackedOpportunity.user_id == user_id
+        ).all()
+
+        tracked_opportunities = []
+        for tracked_opp, opportunity in tracked:
+            tracked_opportunities.append({
+                "opportunity_id": opportunity.id,
+                "opportunity_title": opportunity.title,
+                "opportunity_type": opportunity.type,
+                "opportunity_deadline": opportunity.deadline.isoformat(),
+                "saved_at": tracked_opp.saved_at.isoformat(),
+                "is_expired": tracked_opp.is_expired
+            })
+
+        # Get participation history
+        history = self.db.query(ParticipationHistory, Opportunity).join(
+            Opportunity,
+            ParticipationHistory.opportunity_id == Opportunity.id
+        ).filter(
+            ParticipationHistory.user_id == user_id
+        ).all()
+
+        participation_history = []
+        for participation, opportunity in history:
+            participation_history.append({
+                "participation_id": participation.id,
+                "opportunity_id": opportunity.id,
+                "opportunity_title": opportunity.title,
+                "opportunity_type": opportunity.type,
+                "status": participation.status,
+                "notes": participation.notes,
+                "created_at": participation.created_at.isoformat()
+            })
+
+        # Compile complete data export
+        export_data = {
+            "export_metadata": {
+                "export_date": datetime.utcnow().isoformat(),
+                "user_id": user_id,
+                "data_format_version": "1.0"
+            },
+            "account_information": {
+                "email": user.email,
+                "phone": user.phone,
+                "account_created": user.created_at.isoformat(),
+                "last_updated": user.updated_at.isoformat()
+            },
+            "profile": {
+                "interests": json.loads(profile.interests) if profile.interests else [],
+                "skills": json.loads(profile.skills) if profile.skills else [],
+                "education_level": profile.education_level,
+                "notification_preferences": {
+                    "email": profile.notification_email,
+                    "sms": profile.notification_sms
+                },
+                "low_bandwidth_mode": profile.low_bandwidth_mode,
+                "profile_updated": profile.updated_at.isoformat()
+            },
+            "tracked_opportunities": {
+                "count": len(tracked_opportunities),
+                "opportunities": tracked_opportunities
+            },
+            "participation_history": {
+                "count": len(participation_history),
+                "entries": participation_history
+            }
+        }
+
+        return export_data
+
     
     def verify_password(self, user_id: str, password: str) -> bool:
         """Verify a user's password.
@@ -276,34 +369,25 @@ class ProfileService:
         Returns:
             Dictionary containing formatted user and profile data
         """
-        def safe_json_load(data):
-            if not data: return []
-            try:
-                if isinstance(data, str):
-                    parsed = json.loads(data)
-                    # sometimes it's double serialized
-                    if isinstance(parsed, str):
-                        return json.loads(parsed)
-                    return parsed
-                return data
-            except:
-                return []
-
-        return {
-            "id": user.id,
-            "email": user.email,
-            "phone": user.phone,
-            "interests": safe_json_load(profile.interests),
-            "skills": safe_json_load(profile.skills),
-            "education_level": profile.education_level,
-            "notification_email": profile.notification_email,
-            "notification_sms": profile.notification_sms,
-            "low_bandwidth_mode": profile.low_bandwidth_mode,
-            "created_at": user.created_at.isoformat(),
-            "updated_at": profile.updated_at.isoformat(),
-            "participation_history": [],  # Empty for now, will be populated later
-            "activity_streak": self._calculate_activity_streak(user.id)
-        }
+        # Get participation history for activity streak calculation
+        from models.tracking import ParticipationHistory
+        participation_entries = self.db.query(ParticipationHistory).filter(
+            ParticipationHistory.user_id == user.id
+        ).all()
+        
+        participation_history = [
+            {
+                "id": p.id,
+                "opportunity_id": p.opportunity_id,
+                "status": p.status,
+                "notes": p.notes,
+                "created_at": p.timestamp.isoformat() if p.timestamp else None
+            }
+            for p in participation_entries
+        ]
+        
+        # Use centralized formatter
+        return ResponseFormatter.format_profile_response(user, profile, participation_history)
         
     def _calculate_activity_streak(self, user_id: str) -> int:
         """Calculate the consecutive weeks of activity for a user.

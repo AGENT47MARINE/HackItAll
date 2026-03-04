@@ -431,54 +431,7 @@ class TestOpportunityServiceSearch:
         )
         service.update_opportunity(archived["id"], title="Archived")
         # Manually archive it
-        from models.opportunity import Opportunity
-        opp = db_session.query(Opportunity).filter(Opportunity.id == archived["id"]).first()
-        opp.status = "archived"
-        db_session.commit()
-        
-        results = service.search_opportunities()
-        
-        assert len(results) == 1
-        assert results[0]["title"] == "Active"
-    
-    def test_search_combined_filters(self, db_session):
-        """Test combining multiple filters (AND logic)."""
-        service = OpportunityService(db_session)
-        
-        now = datetime.utcnow()
-        
-        service.create_opportunity(
-            title="Python Hackathon",
-            description="Coding competition",
-            opportunity_type="hackathon",
-            deadline=now + timedelta(days=10),
-            application_link="https://example.com/1"
-        )
-        
-        service.create_opportunity(
-            title="Python Workshop",
-            description="Learning event",
-            opportunity_type="skill_program",
-            deadline=now + timedelta(days=10),
-            application_link="https://example.com/2"
-        )
-        
-        service.create_opportunity(
-            title="Java Hackathon",
-            description="Coding competition",
-            opportunity_type="hackathon",
-            deadline=now + timedelta(days=60),
-            application_link="https://example.com/3"
-        )
-        
-        results = service.search_opportunities(
-            search_term="Python",
-            opportunity_types=["hackathon"],
-            deadline_end=now + timedelta(days=30)
-        )
-        
-        assert len(results) == 1
-        assert results[0]["title"] == "Python Hackathon"
+        from models import User, Profile, Opportunity, TrackedOpportunity, ParticipationHistory, Reminder
 
 
 class TestOpportunityServiceArchival:

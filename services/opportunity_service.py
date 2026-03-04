@@ -4,8 +4,10 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
+from email_validator import validate_email, EmailNotValidError
 
 from models.opportunity import Opportunity
+from utils.formatters import ResponseFormatter
 
 
 class ValidationError(Exception):
@@ -58,6 +60,10 @@ class OpportunityService:
         if application_link is not None:
             if not (application_link.startswith('http://') or application_link.startswith('https://')):
                 raise ValidationError("application_link must be a valid URL starting with http:// or https://")
+            
+            # Additional validation for common malformed URLs that start with http:// but are otherwise invalid
+            if len(application_link) < 10 or '.' not in application_link:
+                raise ValidationError("application_link is too short or missing a domain dot")
         
         # Validate opportunity type
         if opportunity_type is not None:
@@ -117,10 +123,13 @@ class OpportunityService:
             status="active"
         )
         
-        self.db.add(opportunity)
-        self.db.commit()
-        
-        return self._format_opportunity_response(opportunity)
+        try:
+            self.db.add(opportunity)
+            self.db.commit()
+            return self._format_opportunity_response(opportunity)
+        except Exception:
+            self.db.rollback()
+            raise
     
     def get_opportunity(self, opportunity_id: str) -> Optional[Dict[str, Any]]:
         """Get an opportunity by ID.
@@ -211,9 +220,12 @@ class OpportunityService:
         
         opportunity.updated_at = datetime.utcnow()
         
-        self.db.commit()
-        
-        return self._format_opportunity_response(opportunity)
+        try:
+            self.db.commit()
+            return self._format_opportunity_response(opportunity)
+        except Exception:
+            self.db.rollback()
+            raise
     
     def search_opportunities(self, search_term: Optional[str] = None,
                            opportunity_types: Optional[List[str]] = None,
@@ -325,19 +337,8 @@ class OpportunityService:
         Returns:
             Dictionary containing formatted opportunity data
         """
-        return {
-            "id": opportunity.id,
-            "title": opportunity.title,
-            "description": opportunity.description,
-            "type": opportunity.type,
-            "deadline": opportunity.deadline.isoformat(),
-            "application_link": opportunity.application_link,
-            "image_url": getattr(opportunity, 'image_url', None),
-            "tags": json.loads(opportunity.tags),
-            "required_skills": json.loads(opportunity.required_skills),
-            "eligibility": opportunity.eligibility,
-            "status": opportunity.status,
-            "tracked_count": getattr(opportunity, 'tracked_count', 0),
-            "created_at": opportunity.created_at.isoformat(),
-            "updated_at": opportunity.updated_at.isoformat()
-        }
+        # Get tracked count if available
+        tracked_count = getattr(opportunity, 'tracked_count', 0)
+        
+        # Use centralized formatter
+        return ResponseFormatter.format_opportunity_response(opportunity, tracked_count)
