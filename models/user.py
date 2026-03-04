@@ -13,15 +13,17 @@ class User(Base):
     
     __tablename__ = "users"
     
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(String(255), primary_key=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
     phone = Column(String(20), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Relationship to profile
     profile = relationship("Profile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    
+    # Relationship to reminders
+    reminders = relationship("Reminder", back_populates="user", cascade="all, delete-orphan")
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -70,3 +72,24 @@ class Profile(Base):
     
     def __repr__(self):
         return f"<Profile(user_id={self.user_id}, education_level={self.education_level})>"
+
+
+class ContentView(Base):
+    """Model for tracking viewed educational content."""
+    
+    __tablename__ = "content_views"
+    
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    content_id = Column(String(255), nullable=False, index=True)
+    viewed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.id is None:
+            self.id = str(uuid.uuid4())
+        if self.viewed_at is None:
+            self.viewed_at = datetime.utcnow()
+    
+    def __repr__(self):
+        return f"<ContentView(user_id={self.user_id}, content_id={self.content_id})>"

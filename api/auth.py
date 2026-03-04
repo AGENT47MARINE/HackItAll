@@ -109,9 +109,38 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         # Extract the user ID from the verified token
         # In Clerk, 'sub' is the unique user ID string
         user_id = token_payload.payload.get("sub")
+        email = token_payload.payload.get("email") # Check if email is in payload
         
         if not user_id:
              raise AuthenticationError("Token payload missing user identifier")
+
+        # Lazy init: Ensure user exists in our local DB
+        # This solves the issue of webhooks not being reachable on localhost
+        from models.user import User, Profile
+        from services.profile_service import ProfileService
+        
+        db = next(get_db())
+        try:
+            existing_user = db.query(User).filter(User.id == user_id).first()
+            if not existing_user:
+                # If we don't have the email from the token, we can try to get it from Clerk API
+                if not email:
+                    try:
+                        user_obj = clerk.users.get(user_id=user_id)
+                        email = user_obj.email_addresses[0].email_address if user_obj.email_addresses else None
+                    except:
+                        email = f"user_{user_id[:8]}@temporary.com"
+                
+                profile_service = ProfileService(db)
+                profile_service.create_profile(
+                    user_id=user_id,
+                    email=email or f"user_{user_id[:8]}@temporary.com",
+                    education_level="Not Specified",
+                    interests=[],
+                    skills=[]
+                )
+        finally:
+            db.close()
              
         return user_id
         

@@ -10,9 +10,9 @@ psycopg2-binary==2.9.10
 
 # Security
 bcrypt==4.2.1
-python-jose[cryptography]==3.3.0
 passlib==1.7.4
 google-auth==2.36.0
+clerk-backend-api==1.5.1
 
 # Testing
 pytest==8.3.4
@@ -27,5 +27,8 @@ python-dotenv==1.0.1
 requests==2.32.3
 email-validator==2.2.0
 
-# Caching (optional for later)
+# Caching
 redis==5.2.1
+
+# Scheduling
+APScheduler==3.10.4
