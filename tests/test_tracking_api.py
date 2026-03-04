@@ -1,3 +1,4 @@
+import uuid
 """Tests for tracking and participation history API endpoints."""
 import pytest
 from datetime import datetime, timedelta
@@ -7,52 +8,36 @@ from sqlalchemy.orm import sessionmaker
 
 from main import app
 from database import Base, get_db
-from models.user import User, Profile
-from models.opportunity import Opportunity
-from services.auth_service import AuthService
+from models import User, Profile, Opportunity, TrackedOpportunity, ParticipationHistory, Reminder
+from tests.test_utils import mock_clerk_auth, create_auth_header
+from api.auth import get_current_user
+
+@pytest.fixture(autouse=True)
+def authenticated_client(request, client, test_user):
+    """Automatically authenticate all requests in this file, except for without_auth tests."""
+    if "without_auth" in request.node.name:
+        yield
+        return
+        
+    from main import app
+    app.dependency_overrides[get_current_user] = lambda: test_user["id"]
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
 
 
-# Test database setup
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_tracking_api.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def override_get_db():
-    """Override database dependency for testing."""
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-
-
-@pytest.fixture(scope="function")
-def test_db():
-    """Create test database for each test."""
-    Base.metadata.create_all(bind=engine)
-    yield TestingSessionLocal()
-    Base.metadata.drop_all(bind=engine)
+# Test database and client are now provided by conftest.py
 
 
 @pytest.fixture
-def client():
-    """Create test client."""
-    return TestClient(app)
-
-
-@pytest.fixture
-def test_user(test_db):
+def test_user(db_session):
     """Create a test user with profile."""
     from services.profile_service import ProfileService
     
-    profile_service = ProfileService(test_db)
+    profile_service = ProfileService(db_session)
+    user_id = str(uuid.uuid4())
     profile_data = profile_service.create_profile(
+        user_id=user_id,
         email="test@example.com",
-        password="testpassword123",
         education_level="undergraduate",
         interests=["AI", "Machine Learning"],
         skills=["Python", "JavaScript"]
@@ -62,22 +47,11 @@ def test_user(test_db):
 
 
 @pytest.fixture
-def auth_token(test_db, test_user):
-    """Create authentication token for test user."""
-    auth_service = AuthService(test_db)
-    token = auth_service.create_access_token(
-        user_id=test_user["id"],
-        email=test_user["email"]
-    )
-    return token
-
-
-@pytest.fixture
-def test_opportunity(test_db):
+def test_opportunity(db_session):
     """Create a test opportunity."""
     from services.opportunity_service import OpportunityService
     
-    opportunity_service = OpportunityService(test_db)
+    opportunity_service = OpportunityService(db_session)
     opportunity = opportunity_service.create_opportunity(
         title="Test Hackathon",
         description="A test hackathon for students",
@@ -93,11 +67,11 @@ def test_opportunity(test_db):
 
 
 @pytest.fixture
-def expired_opportunity(test_db):
+def expired_opportunity(db_session):
     """Create an expired opportunity."""
     from services.opportunity_service import OpportunityService
     
-    opportunity_service = OpportunityService(test_db)
+    opportunity_service = OpportunityService(db_session)
     opportunity = opportunity_service.create_opportunity(
         title="Expired Hackathon",
         description="An expired hackathon",
@@ -115,17 +89,18 @@ def expired_opportunity(test_db):
 class TestSaveOpportunity:
     """Tests for POST /api/tracked endpoint."""
     
-    def test_save_opportunity_success(self, client, test_user, test_opportunity, auth_token):
+    def test_save_opportunity_success(self, client, test_user, test_opportunity):
         """Test successfully saving an opportunity."""
         request_data = {
             "opportunity_id": test_opportunity["id"]
         }
         
-        response = client.post(
-            "/api/tracked",
-            json=request_data,
-            headers={"Authorization": f"Bearer {auth_token}"}
-        )
+        with mock_clerk_auth(test_user["id"]):
+            response = client.post(
+                "/api/tracked",
+                json=request_data,
+                headers=create_auth_header()
+            )
         
         assert response.status_code == 201
         data = response.json()
@@ -136,57 +111,60 @@ class TestSaveOpportunity:
         assert "saved_at" in data
         assert "opportunity" in data
     
-    def test_save_expired_opportunity(self, client, test_user, expired_opportunity, auth_token):
+    def test_save_expired_opportunity(self, client, test_user, expired_opportunity):
         """Test saving an expired opportunity marks it as expired."""
         request_data = {
             "opportunity_id": expired_opportunity["id"]
         }
         
-        response = client.post(
-            "/api/tracked",
-            json=request_data,
-            headers={"Authorization": f"Bearer {auth_token}"}
-        )
+        with mock_clerk_auth(test_user["id"]):
+            response = client.post(
+                "/api/tracked",
+                json=request_data,
+                headers=create_auth_header()
+            )
         
         assert response.status_code == 201
         data = response.json()
         
         assert data["is_expired"] == True
     
-    def test_save_opportunity_duplicate(self, client, test_user, test_opportunity, auth_token):
+    def test_save_opportunity_duplicate(self, client, test_user, test_opportunity):
         """Test that saving the same opportunity twice returns conflict."""
         request_data = {
             "opportunity_id": test_opportunity["id"]
         }
         
-        # First save
-        response = client.post(
-            "/api/tracked",
-            json=request_data,
-            headers={"Authorization": f"Bearer {auth_token}"}
-        )
-        assert response.status_code == 201
-        
-        # Second save (duplicate)
-        response = client.post(
-            "/api/tracked",
-            json=request_data,
-            headers={"Authorization": f"Bearer {auth_token}"}
-        )
-        assert response.status_code == 409
-        assert "already tracked" in response.json()["detail"].lower()
+        with mock_clerk_auth(test_user["id"]):
+            # First save
+            response = client.post(
+                "/api/tracked",
+                json=request_data,
+                headers=create_auth_header()
+            )
+            assert response.status_code == 201
+            
+            # Second save (duplicate)
+            response = client.post(
+                "/api/tracked",
+                json=request_data,
+                headers=create_auth_header()
+            )
+            assert response.status_code == 409
+            assert "already tracked" in response.json()["detail"].lower()
     
-    def test_save_nonexistent_opportunity(self, client, test_user, auth_token):
+    def test_save_nonexistent_opportunity(self, client, test_user):
         """Test saving a non-existent opportunity returns 404."""
         request_data = {
             "opportunity_id": "nonexistent-id"
         }
         
-        response = client.post(
-            "/api/tracked",
-            json=request_data,
-            headers={"Authorization": f"Bearer {auth_token}"}
-        )
+        with mock_clerk_auth(test_user["id"]):
+            response = client.post(
+                "/api/tracked",
+                json=request_data,
+                headers=create_auth_header()
+            )
         
         assert response.status_code == 404
     
@@ -197,7 +175,7 @@ class TestSaveOpportunity:
         }
         
         response = client.post("/api/tracked", json=request_data)
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestGetTrackedOpportunities:
@@ -234,7 +212,7 @@ class TestGetTrackedOpportunities:
         assert len(data) == 1
         assert data[0]["opportunity_id"] == test_opportunity["id"]
     
-    def test_get_tracked_opportunities_sorted_by_deadline(self, client, test_user, auth_token, test_db):
+    def test_get_tracked_opportunities_sorted_by_deadline(self, client, test_user, auth_token, db_session):
         """Test that tracked opportunities are sorted by deadline (earliest first).
         
         Property 10: Tracked opportunities ordering
@@ -242,7 +220,7 @@ class TestGetTrackedOpportunities:
         """
         from services.opportunity_service import OpportunityService
         
-        opportunity_service = OpportunityService(test_db)
+        opportunity_service = OpportunityService(db_session)
         
         # Create opportunities with different deadlines
         opp1 = opportunity_service.create_opportunity(
@@ -301,7 +279,7 @@ class TestGetTrackedOpportunities:
     def test_get_tracked_opportunities_without_auth(self, client):
         """Test getting tracked opportunities without authentication."""
         response = client.get("/api/tracked")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestRemoveTrackedOpportunity:
@@ -343,7 +321,7 @@ class TestRemoveTrackedOpportunity:
     def test_remove_tracked_opportunity_without_auth(self, client, test_opportunity):
         """Test removing tracked opportunity without authentication."""
         response = client.delete(f"/api/tracked/{test_opportunity['id']}")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestAddParticipation:
@@ -373,11 +351,11 @@ class TestAddParticipation:
         assert "id" in data
         assert "created_at" in data
     
-    def test_add_participation_all_statuses(self, client, test_user, auth_token, test_db):
+    def test_add_participation_all_statuses(self, client, test_user, auth_token, db_session):
         """Test adding participation with all valid statuses."""
         from services.opportunity_service import OpportunityService
         
-        opportunity_service = OpportunityService(test_db)
+        opportunity_service = OpportunityService(db_session)
         statuses = ["applied", "accepted", "rejected", "completed"]
         
         for status in statuses:
@@ -462,7 +440,7 @@ class TestAddParticipation:
         }
         
         response = client.post("/api/participation", json=request_data)
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestUpdateParticipation:
@@ -602,7 +580,7 @@ class TestUpdateParticipation:
         }
         
         response = client.put("/api/participation/some-id", json=update_data)
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestGetParticipationHistory:
@@ -645,11 +623,11 @@ class TestGetParticipationHistory:
         assert data[0]["status"] == "applied"
         assert data[0]["notes"] == "Test notes"
     
-    def test_get_participation_history_multiple(self, client, test_user, auth_token, test_db):
+    def test_get_participation_history_multiple(self, client, test_user, auth_token, db_session):
         """Test getting participation history with multiple entries."""
         from services.opportunity_service import OpportunityService
         
-        opportunity_service = OpportunityService(test_db)
+        opportunity_service = OpportunityService(db_session)
         
         # Create multiple opportunities
         opportunities = []
@@ -689,7 +667,7 @@ class TestGetParticipationHistory:
     def test_get_participation_history_without_auth(self, client):
         """Test getting participation history without authentication."""
         response = client.get("/api/participation")
-        assert response.status_code == 403
+        assert response.status_code == 401
 
 
 class TestTrackingIntegration:

@@ -3,6 +3,9 @@ import pytest
 import json
 from datetime import datetime
 from models.user import User, Profile
+from models.opportunity import Opportunity
+from models.tracking import TrackedOpportunity, ParticipationHistory
+from models.reminder import Reminder
 from database import Base, engine
 
 
@@ -13,12 +16,10 @@ class TestUserModel:
         """Test creating a User instance."""
         user = User(
             email="test@example.com",
-            password_hash="hashed_password",
             phone="+1234567890"
         )
         
         assert user.email == "test@example.com"
-        assert user.password_hash == "hashed_password"
         assert user.phone == "+1234567890"
         assert user.id is not None  # UUID should be generated
         assert isinstance(user.created_at, datetime)
@@ -27,8 +28,7 @@ class TestUserModel:
     def test_user_without_phone(self):
         """Test creating a User without phone number."""
         user = User(
-            email="test@example.com",
-            password_hash="hashed_password"
+            email="test@example.com"
         )
         
         assert user.email == "test@example.com"
@@ -97,7 +97,6 @@ class TestDatabaseSchema:
         
         assert 'id' in columns
         assert 'email' in columns
-        assert 'password_hash' in columns
         assert 'phone' in columns
         assert 'created_at' in columns
         assert 'updated_at' in columns

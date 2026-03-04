@@ -30,4 +30,4 @@ def test_main_app_import():
     """Test that main application can be imported."""
     from main import app
     assert app is not None
-    assert app.title == "Opportunity Access Platform"
+    assert app.title == "HackItAll - Opportunity Access Platform"

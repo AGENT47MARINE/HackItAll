@@ -30,7 +30,6 @@ class TestUserProfileIntegration:
         # Create user
         user = User(
             email="student@example.com",
-            password_hash="hashed_password_123",
             phone="+1234567890"
         )
         db_session.add(user)
@@ -61,8 +60,7 @@ class TestUserProfileIntegration:
         """Test bidirectional relationship between User and Profile."""
         # Create user with profile
         user = User(
-            email="test@example.com",
-            password_hash="hashed_password"
+            email="test@example.com"
         )
         db_session.add(user)
         db_session.flush()
@@ -86,8 +84,7 @@ class TestUserProfileIntegration:
         """Test that deleting a user cascades to delete the profile."""
         # Create user with profile
         user = User(
-            email="delete@example.com",
-            password_hash="hashed_password"
+            email="delete@example.com"
         )
         db_session.add(user)
         db_session.flush()
@@ -115,16 +112,14 @@ class TestUserProfileIntegration:
         """Test that email must be unique."""
         # Create first user
         user1 = User(
-            email="unique@example.com",
-            password_hash="password1"
+            email="unique@example.com"
         )
         db_session.add(user1)
         db_session.commit()
         
         # Try to create second user with same email
         user2 = User(
-            email="unique@example.com",
-            password_hash="password2"
+            email="unique@example.com"
         )
         db_session.add(user2)
         
@@ -136,8 +131,7 @@ class TestUserProfileIntegration:
         # Note: SQLite doesn't enforce foreign key constraints by default
         # This test verifies the relationship structure exists
         user = User(
-            email="fk@example.com",
-            password_hash="hashed_password"
+            email="fk@example.com"
         )
         db_session.add(user)
         db_session.flush()
@@ -160,8 +154,7 @@ class TestUserProfileIntegration:
     def test_profile_notification_preferences(self, db_session: Session):
         """Test that notification preferences are stored correctly."""
         user = User(
-            email="notify@example.com",
-            password_hash="hashed_password"
+            email="notify@example.com"
         )
         db_session.add(user)
         db_session.flush()
@@ -185,8 +178,7 @@ class TestUserProfileIntegration:
     def test_low_bandwidth_mode_preference(self, db_session: Session):
         """Test that low bandwidth mode preference is stored correctly."""
         user = User(
-            email="bandwidth@example.com",
-            password_hash="hashed_password"
+            email="bandwidth@example.com"
         )
         db_session.add(user)
         db_session.flush()

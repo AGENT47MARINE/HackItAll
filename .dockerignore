@@ -1,0 +1,31 @@
+# Virtual Environments
+venv/
+env/
+.venv/
+.env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Frontend (Not served by the backend API in production typically)
+web/
+node_modules/
+
+# Git
+.git/
+.gitignore
+
+# SQLite databases (Never commit local dev DBs to production container)
+*.db
+*.sqlite3
+
+# Agent internal files
+.gemini/
+.agents/
+
+# IDE
+.vscode/
+.idea/
