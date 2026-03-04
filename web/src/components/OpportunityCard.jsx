@@ -1,7 +1,20 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import './OpportunityCard.css';
 
 export default function OpportunityCard({ opportunity, relevanceScore, onRemove }) {
+  const [offset, setOffset] = useState(157); // Circumference for r=25 is ~157
+
+  useEffect(() => {
+    if (relevanceScore) {
+      const percentage = relevanceScore * 100;
+      const progress = 157 - (percentage / 100) * 157;
+      // Stagger animation slightly
+      const timer = setTimeout(() => setOffset(progress), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [relevanceScore]);
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -25,6 +38,29 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
 
   return (
     <div className={`opportunity-card ${isExpired ? 'expired' : ''}`}>
+      {/* Visual Match Score Ring (Stripes) */}
+      {relevanceScore && (
+        <div className="match-score-container" title={`${Math.round(relevanceScore * 100)}% Match`}>
+          <svg className="match-ring-svg">
+            <defs>
+              <linearGradient id="score-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#8833ff" />
+                <stop offset="100%" stopColor="#3388ff" />
+              </linearGradient>
+            </defs>
+            <circle className="match-ring-bg" cx="27" cy="27" r="25" />
+            <circle
+              className="match-ring-fill"
+              cx="27"
+              cy="27"
+              r="25"
+              style={{ strokeDashoffset: offset }}
+            />
+          </svg>
+          <span className="match-score-text">{Math.round(relevanceScore * 100)}</span>
+        </div>
+      )}
+
       {opportunity.image_url && (
         <div className="card-image-container">
           <img src={opportunity.image_url} alt={opportunity.title} className="card-image" />
@@ -36,9 +72,6 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
         <div className="card-header-badges">
           {opportunity.tracked_count > 0 && (
             <span className="tracked-badge">🔥 {opportunity.tracked_count}</span>
-          )}
-          {relevanceScore && (
-            <span className="score-badge">{Math.round(relevanceScore * 100)}% match</span>
           )}
         </div>
       </div>
@@ -73,8 +106,18 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
         </div>
       )}
 
+      <a
+        href={opportunity.application_link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="explore-button"
+        onClick={(e) => e.stopPropagation()}
+      >
+        Explore & Register 🚀
+      </a>
+
       {onRemove && (
-        <button onClick={() => onRemove(opportunity.id)} className="remove-button">
+        <button onClick={(e) => { e.stopPropagation(); onRemove(opportunity.id); }} className="remove-button">
           Remove
         </button>
       )}

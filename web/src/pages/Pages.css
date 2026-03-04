@@ -264,6 +264,22 @@
   }
 }
 
+.animate-in {
+  animation: animateIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes animateIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .opportunities-content {

@@ -3,6 +3,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { opportunitiesAPI } from '../services/api';
 import OpportunityCard from '../components/OpportunityCard';
 import GridBackground from '../components/GridBackground';
+import GlassSurface from '../components/GlassSurface';
 import './Pages.css';
 
 export default function Discover() {
@@ -24,8 +25,8 @@ export default function Discover() {
                 if (isSignedIn) {
                     setRecLoading(true);
                     const recData = await opportunitiesAPI.getRecommendations();
-                    // Extract the opportunity object from the RecommendationResponse wrapper
-                    setRecommendations(recData.map(r => r.opportunity));
+                    // Store the full recommendation object to get the score
+                    setRecommendations(recData);
                     setRecLoading(false);
                 }
             } catch (error) {
@@ -46,7 +47,7 @@ export default function Discover() {
 
                 {/* Personalized "For You" AI Section (Only visible if signed in) */}
                 {isSignedIn && (
-                    <div className="mb-16">
+                    <div className="mb-24">
                         <div className="opportunities-header">
                             <h1 className="opportunities-title">
                                 For <span className="gradient-text">You 🎯</span>
@@ -66,13 +67,37 @@ export default function Discover() {
                                 <p>No personalized matches found right now. Check back later!</p>
                             </div>
                         ) : (
-                            <div className="opportunities-grid-modern">
-                                {recommendations.map((opportunity) => (
-                                    <div key={opportunity.id} style={{ display: 'block', textDecoration: 'none', color: 'inherit', cursor: 'pointer' }} onClick={() => window.location.href = `/opportunities/${opportunity.id}`}>
-                                        <OpportunityCard opportunity={opportunity} />
-                                    </div>
-                                ))}
-                            </div>
+                            <GlassSurface
+                                width="100%"
+                                height="auto"
+                                borderRadius={24}
+                                backgroundOpacity={0.02}
+                                opacity={0.6}
+                                blur={20}
+                                className="p-8"
+                            >
+                                <div className="opportunities-grid-modern">
+                                    {recommendations.map((rec, index) => (
+                                        <div
+                                            key={rec.opportunity.id}
+                                            className="animate-in"
+                                            style={{
+                                                animationDelay: `${index * 150}ms`,
+                                                display: 'block',
+                                                textDecoration: 'none',
+                                                color: 'inherit',
+                                                cursor: 'pointer'
+                                            }}
+                                            onClick={() => window.location.href = `/opportunities/${rec.opportunity.id}`}
+                                        >
+                                            <OpportunityCard
+                                                opportunity={rec.opportunity}
+                                                relevanceScore={rec.relevance_score}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </GlassSurface>
                         )}
                         <div className="my-12 w-full h-px bg-white/10" />
                     </div>
@@ -101,8 +126,19 @@ export default function Discover() {
                     </div>
                 ) : (
                     <div className="opportunities-grid-modern">
-                        {trending.map((opportunity) => (
-                            <div key={opportunity.id} style={{ display: 'block', textDecoration: 'none', color: 'inherit', cursor: 'pointer' }} onClick={() => window.location.href = `/opportunities/${opportunity.id}`}>
+                        {trending.map((opportunity, index) => (
+                            <div
+                                key={opportunity.id}
+                                className="animate-in"
+                                style={{
+                                    animationDelay: `${index * 100}ms`,
+                                    display: 'block',
+                                    textDecoration: 'none',
+                                    color: 'inherit',
+                                    cursor: 'pointer'
+                                }}
+                                onClick={() => window.location.href = `/opportunities/${opportunity.id}`}
+                            >
                                 <OpportunityCard opportunity={opportunity} />
                             </div>
                         ))}
