@@ -67,10 +67,17 @@ class RecommendationEngine:
                 # Cache hit! Reconstruct the Opportunity objects from IDs
                 try:
                     result = []
-                    for item in entry.get('results', []):
-                        opp = self.db.query(Opportunity).filter(Opportunity.id == item['id']).first()
-                        if opp:
-                            result.append((opp, item['score']))
+                    item_ids = [item['id'] for item in entry.get('results', [])]
+                    item_scores = {item['id']: item['score'] for item in entry.get('results', [])}
+
+                    if item_ids:
+                        opps = self.db.query(Opportunity).filter(Opportunity.id.in_(item_ids)).all()
+                        # Restore original ordering based on the scores
+                        opp_dict = {opp.id: opp for opp in opps}
+                        for item_id in item_ids:
+                            if item_id in opp_dict:
+                                result.append((opp_dict[item_id], item_scores[item_id]))
+
                     if result:
                         return result
                 except Exception:
@@ -126,26 +133,26 @@ class RecommendationEngine:
         Returns:
             List of participation history entries with opportunity type and status
         """
-        # This will be implemented when ParticipationHistory model is created
-        # For now, return empty list
         try:
-            from models.participation import ParticipationHistory
-            history_entries = self.db.query(ParticipationHistory).filter(
+            from models.tracking import ParticipationHistory
+
+            # Use joinedload to prevent N+1 queries when fetching history and opportunities
+            history_entries = self.db.query(ParticipationHistory).join(
+                Opportunity, ParticipationHistory.opportunity_id == Opportunity.id
+            ).with_entities(
+                Opportunity.type.label('opportunity_type'),
+                ParticipationHistory.status
+            ).filter(
                 ParticipationHistory.user_id == user_id
             ).all()
 
             # Convert to dict format expected by calculate_relevance_score
             result = []
             for entry in history_entries:
-                # Get opportunity type
-                opportunity = self.db.query(Opportunity).filter(
-                    Opportunity.id == entry.opportunity_id
-                ).first()
-                if opportunity:
-                    result.append({
-                        'opportunity_type': opportunity.type,
-                        'status': entry.status
-                    })
+                result.append({
+                    'opportunity_type': entry.opportunity_type,
+                    'status': entry.status
+                })
             return result
         except ImportError:
             # ParticipationHistory model not yet implemented

@@ -227,12 +227,126 @@ class OpportunityService:
             self.db.rollback()
             raise
     
+    def scrape_and_create_opportunity(self, url: str) -> Dict[str, Any]:
+        from services.scraper.dispatcher import ScraperDispatcher
+        import dateutil.parser
+
+        dispatcher = ScraperDispatcher()
+        existing = self.db.query(Opportunity).filter(Opportunity.source_url == url).first()
+        if existing:
+            return self._format_opportunity_response(existing)
+
+        extracted_data = dispatcher.execute_scrape(url)
+        deadline_dt = datetime.now()
+        if extracted_data.get("deadline"):
+            try:
+                deadline_dt = dateutil.parser.parse(extracted_data["deadline"])
+            except:
+                pass
+
+        try:
+            opp = Opportunity(
+                title=extracted_data.get("title", "Unknown Hackathon"),
+                description=extracted_data.get("description", "Scraped opportunity"),
+                type=extracted_data.get("type", "hackathon"),
+                deadline=deadline_dt,
+                application_link=extracted_data.get("application_link", url),
+                image_url=extracted_data.get("image_url"),
+                tags=json.dumps(extracted_data.get("tags", [])),
+                required_skills=json.dumps(extracted_data.get("required_skills", [])),
+                eligibility=extracted_data.get("eligibility"),
+                source_url=url, # Critical for deduplication logic
+                status="active"
+            )
+            self.db.add(opp)
+            self.db.commit()
+            return self._format_opportunity_response(opp)
+        except Exception:
+            self.db.rollback()
+            raise
+
+    def batch_scrape(self) -> Dict[str, Any]:
+        from services.scraper.unstop_spider import UnstopSpider
+        from services.scraper.devpost_spider import DevpostSpider
+
+        errors = []
+        all_scraped = []
+        sources_used = []
+
+        try:
+            unstop = UnstopSpider()
+            unstop_results = unstop.scrape(max_results=15)
+            all_scraped.extend(unstop_results)
+            if unstop_results:
+                sources_used.append("unstop.com")
+        except Exception as e:
+            errors.append(f"Unstop spider failed: {str(e)}")
+
+        try:
+            devpost = DevpostSpider()
+            devpost_results = devpost.scrape(max_results=15)
+            all_scraped.extend(devpost_results)
+            if devpost_results:
+                sources_used.append("devpost.com")
+        except Exception as e:
+            errors.append(f"Devpost spider failed: {str(e)}")
+
+        new_count = 0
+        skipped_count = 0
+
+        for item in all_scraped:
+            source_url = item.get("source_url", "")
+            if not source_url:
+                skipped_count += 1
+                continue
+
+            existing = self.db.query(Opportunity).filter(
+                Opportunity.source_url == source_url
+            ).first()
+
+            if existing:
+                skipped_count += 1
+                continue
+
+            try:
+                opp = Opportunity(
+                    title=item.get("title", "Unknown"),
+                    description=item.get("description", "Scraped opportunity"),
+                    type=item.get("type", "hackathon"),
+                    deadline=item.get("deadline", datetime.utcnow()),
+                    application_link=item.get("application_link", source_url),
+                    image_url=item.get("image_url"),
+                    tags=json.dumps(item.get("tags", [])),
+                    required_skills=json.dumps(item.get("required_skills", [])),
+                    eligibility=item.get("eligibility"),
+                    location=item.get("location"),
+                    location_type=item.get("location_type", "Online"),
+                    source_url=source_url,
+                    status="active",
+                )
+                self.db.add(opp)
+                new_count += 1
+            except Exception as e:
+                errors.append(f"Failed to insert '{item.get('title', '?')}': {str(e)}")
+
+        if new_count > 0:
+            self.db.commit()
+
+        return {
+            "new_count": new_count,
+            "skipped_count": skipped_count,
+            "sources": sources_used,
+            "errors": errors
+        }
+
     def search_opportunities(self, search_term: Optional[str] = None,
                            opportunity_types: Optional[List[str]] = None,
                            deadline_start: Optional[datetime] = None,
                            deadline_end: Optional[datetime] = None,
                            eligibility: Optional[str] = None,
-                           include_archived: bool = False) -> List[Dict[str, Any]]:
+                           include_archived: bool = False,
+                           sort_by: Optional[str] = None,
+                           user_interests: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Search and filter opportunities.
         
         Args:
@@ -242,10 +356,14 @@ class OpportunityService:
             deadline_end: Filter by deadline end date (optional)
             eligibility: Filter by eligibility requirements (optional)
             include_archived: Include archived opportunities (default: False)
+            sort_by: Strategy to rank opportunities ('relevance', 'deadline', 'popularity')
+            user_interests: Optional list of user interests for relevance sorting
             
         Returns:
             List of dictionaries containing opportunity data
         """
+        from services.ranking_service import RankingService
+
         query = self.db.query(Opportunity)
         
         # Filter by status
@@ -280,7 +398,15 @@ class OpportunityService:
         
         opportunities = query.all()
         
-        return [self._format_opportunity_response(opp) for opp in opportunities]
+        # Apply ranking logic
+        ranking_service = RankingService()
+        ranked_opportunities = ranking_service.rank_opportunities(
+            opportunities=opportunities,
+            sort_by=sort_by,
+            user_interests=user_interests
+        )
+
+        return [self._format_opportunity_response(opp) for opp in ranked_opportunities]
         
     def get_trending(self, limit: int = 10) -> List[Dict[str, Any]]:
         """Get trending opportunities based on tracked count.

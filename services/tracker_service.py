@@ -20,6 +20,46 @@ class TrackerService:
         """
         self.db = db_session
     
+    def scrape_and_track_opportunity(self, user_id: str, url: str) -> Dict[str, Any]:
+        """Scrape an external URL, save it to DB (if new), and track it.
+
+        Args:
+            user_id: User ID tracking the opportunity
+            url: URL to scrape and track
+
+        Returns:
+            Tracked opportunity data
+        """
+        from services.scraper_service import ScraperService
+
+        base_url = url.rstrip('/')
+        existing_opp = self.db.query(Opportunity).filter(
+            Opportunity.application_link.ilike(f"%{base_url}%")
+        ).first()
+
+        if existing_opp:
+            opportunity_to_track = existing_opp
+        else:
+            scraper = ScraperService()
+            scraped_data = scraper.scrape_url(url)
+
+            opportunity_to_track = Opportunity(
+                title=scraped_data["title"],
+                description=scraped_data["description"],
+                type=scraped_data["type"],
+                image_url=scraped_data.get("image_url"),
+                deadline=datetime.utcnow(),
+                application_link=scraped_data["application_link"],
+                tags=scraped_data["tags"],
+                required_skills=scraped_data["required_skills"],
+                status="active"
+            )
+            self.db.add(opportunity_to_track)
+            self.db.commit()
+            self.db.refresh(opportunity_to_track)
+
+        return self.save_opportunity(user_id, opportunity_to_track.id)
+
     def save_opportunity(self, user_id: str, opportunity_id: str) -> Dict[str, Any]:
         """Save an opportunity to the user's tracked list.
         

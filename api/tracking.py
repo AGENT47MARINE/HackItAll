@@ -117,45 +117,11 @@ async def scrape_and_track_opportunity(
     3. Save opportunity to database
     4. Track it for the user
     """
-    from models.opportunity import Opportunity
-    from services.scraper_service import ScraperService
-    
-    # 1. Check if URL already exists
-    # We do a 'like' search to handle minor http vs https or trailing slash differences
-    base_url = request.url.rstrip('/')
-    existing_opp = db.query(Opportunity).filter(
-        Opportunity.application_link.ilike(f"%{base_url}%")
-    ).first()
-    
-    if existing_opp:
-        opportunity_to_track = existing_opp
-    else:
-        # 2. Doesn't exist, we must scrape
-        scraper = ScraperService()
-        scraped_data = scraper.scrape_url(request.url)
-        
-        # 3. Create new Opportunity in Database
-        opportunity_to_track = Opportunity(
-            title=scraped_data["title"],
-            description=scraped_data["description"],
-            type=scraped_data["type"],
-            image_url=scraped_data.get("image_url"),
-            deadline=datetime.utcnow(), # Temporary default, user can edit later
-            application_link=scraped_data["application_link"],
-            tags=scraped_data["tags"],
-            required_skills=scraped_data["required_skills"],
-            status="active"
-        )
-        db.add(opportunity_to_track)
-        db.commit()
-        db.refresh(opportunity_to_track)
-
-    # 4. Track it for the user
     tracker_service = TrackerService(db)
     try:
-        tracked = tracker_service.save_opportunity(
+        tracked = tracker_service.scrape_and_track_opportunity(
             user_id=current_user_id,
-            opportunity_id=opportunity_to_track.id
+            url=request.url
         )
         return TrackedOpportunityResponse(**tracked)
     except IntegrityError:

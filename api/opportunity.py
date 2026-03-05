@@ -90,6 +90,7 @@ async def search_opportunities(
     deadline_start: Optional[datetime] = Query(default=None, description="Filter by deadline start date"),
     deadline_end: Optional[datetime] = Query(default=None, description="Filter by deadline end date"),
     eligibility: Optional[str] = Query(default=None, description="Filter by eligibility requirements"),
+    sort_by: Optional[str] = Query(default=None, description="Sort opportunities by 'relevance', 'deadline', or 'popularity'"),
     db: Session = Depends(get_db)
 ):
     """Search and filter opportunities.
@@ -99,6 +100,7 @@ async def search_opportunities(
     - type: Filter by opportunity types (can specify multiple)
     - deadline_start/deadline_end: Filter by deadline range
     - eligibility: Filter by eligibility requirements
+    - sort_by: Rank opportunities by 'relevance', 'deadline', or 'popularity'
     
     All filters are combined with AND logic.
     
@@ -108,22 +110,47 @@ async def search_opportunities(
         deadline_start: Start of deadline range (optional)
         deadline_end: End of deadline range (optional)
         eligibility: Eligibility requirement filter (optional)
+        sort_by: Ranking mechanism (optional)
         db: Database session
         
     Returns:
         List of opportunities matching the search criteria
     """
+    from services.cache_service import cache, CacheKeys, CacheTTL
+
+    filters = {
+        "search": search,
+        "type": type,
+        "deadline_start": str(deadline_start) if deadline_start else None,
+        "deadline_end": str(deadline_end) if deadline_end else None,
+        "eligibility": eligibility,
+        "sort_by": sort_by,
+        "include_archived": False
+    }
+
+    cache_key = CacheKeys.opportunities_list(filters)
+    cached_data = cache.get(cache_key)
+
+    if cached_data:
+        return [OpportunityResponse(**opp) for opp in cached_data]
+
     opportunity_service = OpportunityService(db)
     
+    # If the endpoint doesn't strictly enforce auth, we rely on default sorting
+    # logic which ignores relevance if no interests are provided.
+
     opportunities = opportunity_service.search_opportunities(
         search_term=search,
         opportunity_types=type,
         deadline_start=deadline_start,
         deadline_end=deadline_end,
         eligibility=eligibility,
-        include_archived=False
+        include_archived=False,
+        sort_by=sort_by,
+        user_interests=[]
     )
     
+    cache.set(cache_key, opportunities, ttl=CacheTTL.OPPORTUNITIES)
     return [OpportunityResponse(**opp) for opp in opportunities]
 
 
@@ -143,9 +170,18 @@ async def get_trending_opportunities(
     Returns:
         List of trending opportunities
     """
+    from services.cache_service import cache, CacheKeys, CacheTTL
+
+    cache_key = f"opportunities:trending:{limit}"
+    cached_data = cache.get(cache_key)
+
+    if cached_data:
+        return [OpportunityResponse(**opp) for opp in cached_data]
+
     opportunity_service = OpportunityService(db)
     trending_opportunities = opportunity_service.get_trending(limit=limit)
     
+    cache.set(cache_key, trending_opportunities, ttl=CacheTTL.OPPORTUNITIES)
     return [OpportunityResponse(**opp) for opp in trending_opportunities]
 
 
@@ -291,46 +327,9 @@ async def scrape_opportunity(
     """
     Scrapes a hackathon URL dynamically and adds it to the database.
     """
-    from services.scraper.dispatcher import ScraperDispatcher
-    from datetime import datetime
-    import dateutil.parser
-    
-    dispatcher = ScraperDispatcher()
-    
     try:
-        # 1. Search: Check if the URL already exists in our DB
-        from models.opportunity import Opportunity
-        existing = db.query(Opportunity).filter(Opportunity.source_url == request.url).first()
-        if existing:
-            opportunity_service = OpportunityService(db)
-            return opportunity_service._format_opportunity_response(existing)
-
-        # 2. Scrape: Only run Playwright + Ollama if not found
-        extracted_data = dispatcher.execute_scrape(request.url)
-        
-        # Parse the loose date string from AI into a strict datetime
-        deadline_dt = datetime.now()
-        if extracted_data.get("deadline"):
-            try:
-                 deadline_dt = dateutil.parser.parse(extracted_data["deadline"])
-            except:
-                 pass
-                 
-        # 3. Store: Save new results to DB
         opportunity_service = OpportunityService(db)
-        opportunity = opportunity_service.create_opportunity(
-            title=extracted_data.get("title", "Unknown Hackathon"),
-            description=extracted_data.get("description", "Scraped opportunity"),
-            opportunity_type=extracted_data.get("type", "hackathon"),
-            deadline=deadline_dt,
-            application_link=extracted_data.get("application_link", request.url),
-            image_url=extracted_data.get("image_url"),
-            tags=extracted_data.get("tags", []),
-            required_skills=extracted_data.get("required_skills", []),
-            eligibility=extracted_data.get("eligibility"),
-            source_url=request.url # Explicitly set source_url for future checks
-        )
-        
+        opportunity = opportunity_service.scrape_and_create_opportunity(request.url)
         return opportunity
         
     except Exception as e:
@@ -467,82 +466,7 @@ async def batch_scrape(
     Returns:
         Batch scrape results with counts and any errors.
     """
-    from services.scraper.unstop_spider import UnstopSpider
-    from services.scraper.devpost_spider import DevpostSpider
-    from models.opportunity import Opportunity
-
-    errors = []
-    all_scraped = []
-    sources_used = []
-
-    # Run Unstop spider
-    try:
-        unstop = UnstopSpider()
-        unstop_results = unstop.scrape(max_results=15)
-        all_scraped.extend(unstop_results)
-        if unstop_results:
-            sources_used.append("unstop.com")
-    except Exception as e:
-        errors.append(f"Unstop spider failed: {str(e)}")
-
-    # Run Devpost spider
-    try:
-        devpost = DevpostSpider()
-        devpost_results = devpost.scrape(max_results=15)
-        all_scraped.extend(devpost_results)
-        if devpost_results:
-            sources_used.append("devpost.com")
-    except Exception as e:
-        errors.append(f"Devpost spider failed: {str(e)}")
-
-    # Deduplicate and insert
-    new_count = 0
-    skipped_count = 0
-
-    for item in all_scraped:
-        source_url = item.get("source_url", "")
-
-        if not source_url:
-            skipped_count += 1
-            continue
-
-        # Check if already exists
-        existing = db.query(Opportunity).filter(
-            Opportunity.source_url == source_url
-        ).first()
-
-        if existing:
-            skipped_count += 1
-            continue
-
-        try:
-            opp = Opportunity(
-                title=item.get("title", "Unknown"),
-                description=item.get("description", "Scraped opportunity"),
-                type=item.get("type", "hackathon"),
-                deadline=item.get("deadline", datetime.utcnow()),
-                application_link=item.get("application_link", source_url),
-                image_url=item.get("image_url"),
-                tags=item.get("tags", "[]"),
-                required_skills=item.get("required_skills", "[]"),
-                eligibility=item.get("eligibility"),
-                location=item.get("location"),
-                location_type=item.get("location_type", "Online"),
-                source_url=source_url,
-                status="active",
-            )
-            db.add(opp)
-            new_count += 1
-        except Exception as e:
-            errors.append(f"Failed to insert '{item.get('title', '?')}': {str(e)}")
-
-    if new_count > 0:
-        db.commit()
-
-    return BatchScrapeResponse(
-        new_count=new_count,
-        skipped_count=skipped_count,
-        sources=sources_used,
-        errors=errors,
-    )
+    opportunity_service = OpportunityService(db)
+    result = opportunity_service.batch_scrape()
+    return BatchScrapeResponse(**result)
 
