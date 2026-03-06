@@ -27,6 +27,10 @@ python-dotenv==1.0.1
 requests==2.32.3
 email-validator==2.2.0
 
+# Scraping
+beautifulsoup4==4.12.3
+playwright==1.42.0
+
 # Caching
 redis==5.2.1
 

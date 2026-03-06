@@ -1,6 +1,29 @@
 version: '3.8'
 
 services:
+  app:
+    build: .
+    container_name: hackitall-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - DATABASE_URL=postgresql://hackitall:password123@postgres:5432/hackitall_db
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=False
+      - ALLOWED_ORIGINS=https://hackitall.com,https://www.hackitall.com
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+    volumes:
+      - .:/app
+      - /app/venv
+      - /app/web
+      - /app/mobile
+
   postgres:
     image: postgres:16-alpine
     container_name: hackitall-db
@@ -20,6 +43,17 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: hackitall-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redisdata:/data
+
 volumes:
   pgdata:
+    driver: local
+  redisdata:
     driver: local

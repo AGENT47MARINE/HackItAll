@@ -27,5 +27,8 @@ class Config:
     # Application
     DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
+    # CORS
+    ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
+
 
 config = Config()
