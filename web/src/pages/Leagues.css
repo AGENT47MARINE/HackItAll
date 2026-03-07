@@ -1,0 +1,343 @@
+/* ═══════════════════════════════════════════════════════════════
+   HackItAll Leagues — Retro Pixel-Art Design
+   8-bit Borders + Pixel Fonts + CRT Scanline Effect
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+:root {
+    --pixel-bg: #0a0a0a;
+    --pixel-border: #fff;
+    --pixel-green: #00ff41;
+    --pixel-gold: #ffcc00;
+    --pixel-purple: #9d50bb;
+    --pixel-bronze: #cd7f32;
+    --pixel-silver: #c0c0c0;
+    --pixel-platinum: #e5e4e2;
+    --pixel-diamond: #b9f2ff;
+    --pixel-obsidian: #3a3a3a;
+}
+
+.leagues-page {
+    min-height: 100vh;
+    background-color: var(--pixel-bg);
+    color: #fff;
+    font-family: 'VT323', monospace;
+    padding: 2rem;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* CRT Scanline Effect */
+.leagues-page::after {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 100;
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+}
+
+/* Header Banner */
+.leagues-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: flicker 0.15s infinite;
+}
+
+.leagues-header h1 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 2.2rem;
+    text-shadow: 4px 4px #000, 8px 8px rgba(255, 255, 255, 0.1);
+    letter-spacing: -2px;
+    margin-bottom: 0.5rem;
+}
+
+.leagues-subtitle {
+    font-size: 1.5rem;
+    color: var(--pixel-green);
+    text-transform: uppercase;
+}
+
+/* Main Dashboard Grid */
+.leagues-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Retro Box Style */
+.pixel-box {
+    background: #111;
+    border: 4px solid #333;
+    box-shadow: inset -4px -4px #000, inset 4px 4px #555;
+    padding: 1.5rem;
+    position: relative;
+}
+
+/* Tier Card */
+.tier-card {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.tier-badge-container {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 1.5rem;
+    background: #222;
+    border: 4px solid var(--pixel-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    box-shadow: 8px 8px #000;
+    position: relative;
+}
+
+.tier-badge-container::before {
+    content: '';
+    position: absolute;
+    inset: -10px;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    animation: rotate 10s linear infinite;
+}
+
+.tier-name {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: var(--pixel-gold);
+}
+
+/* XP Bar */
+.pixel-xp-container {
+    margin-top: 2rem;
+}
+
+.xp-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.pixel-xp-bar {
+    height: 30px;
+    background: #000;
+    border: 3px solid #444;
+    padding: 3px;
+    position: relative;
+}
+
+.pixel-xp-fill {
+    height: 100%;
+    background: var(--pixel-green);
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.pixel-xp-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: sweep 2s infinite;
+}
+
+/* Stats Row */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #888;
+    text-transform: uppercase;
+}
+
+/* Achievements */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.badge-slot {
+    aspect-ratio: 1;
+    background: #1a1a1a;
+    border: 2px solid #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    opacity: 0.4;
+    filter: grayscale(1);
+    transition: all 0.3s ease;
+}
+
+.badge-slot.unlocked {
+    opacity: 1;
+    filter: none;
+    border-color: var(--pixel-green);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+}
+
+.badge-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.25rem;
+}
+
+.badge-title {
+    font-size: 0.6rem;
+    text-align: center;
+    line-height: 1;
+}
+
+/* Leaderboard */
+.leaderboard-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+.leaderboard-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #333;
+    padding-bottom: 0.5rem;
+}
+
+.leader-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #222;
+    gap: 1rem;
+}
+
+.leader-item.current-user {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--pixel-green);
+}
+
+.leader-rank {
+    width: 25px;
+    font-weight: bold;
+    color: #555;
+}
+
+.leader-avatar {
+    font-size: 1.2rem;
+}
+
+.leader-info {
+    flex: 1;
+}
+
+.leader-name {
+    font-size: 1rem;
+}
+
+.leader-xp {
+    font-size: 0.8rem;
+    color: var(--pixel-green);
+}
+
+/* Animations */
+@keyframes flicker {
+    0% {
+        opacity: 0.97;
+    }
+
+    5% {
+        opacity: 0.95;
+    }
+
+    10% {
+        opacity: 0.9;
+    }
+
+    15% {
+        opacity: 0.95;
+    }
+
+    20% {
+        opacity: 0.98;
+    }
+
+    25% {
+        opacity: 0.95;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes sweep {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Dashboard Nav Link */
+.leagues-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pixel-trophy {
+    font-size: 1.2rem;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}

@@ -1,0 +1,100 @@
+/* ═══════════════════════════════════════════════════════════════
+   Daily Quests — Retro RPG Sidebar
+   ═══════════════════════════════════════════════════════════════ */
+
+.daily-quests-container {
+    padding: 1rem;
+    background: #000;
+    max-width: 300px;
+}
+
+.pixel-banner {
+    background: var(--pixel-gold);
+    color: #000;
+    padding: 0.5rem;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 0.6rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    border: 2px solid #fff;
+    box-shadow: 4px 4px #444;
+}
+
+.quest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.quest-item {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #222;
+}
+
+.quest-item.done {
+    opacity: 0.5;
+}
+
+.quest-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.quest-xp {
+    margin-left: auto;
+    color: var(--pixel-green);
+    font-size: 0.9rem;
+}
+
+.quest-progress-bar {
+    height: 10px;
+    background: #1a1a1a;
+    border: 2px solid #333;
+    position: relative;
+    padding: 2px;
+}
+
+.quest-progress-fill {
+    height: 100%;
+    background: #555;
+    transition: width 0.3s ease;
+}
+
+.quest-item.done .quest-progress-fill {
+    background: var(--pixel-green);
+}
+
+.quest-check {
+    position: absolute;
+    right: -10px;
+    top: -10px;
+    font-size: 0.8rem;
+    background: #111;
+    border-radius: 50%;
+}
+
+.daily-bonus-banner {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--pixel-gold);
+    border: 1px dashed var(--pixel-gold);
+    padding: 0.4rem;
+    animation: flash 2s infinite;
+}
+
+@keyframes flash {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
