@@ -14,6 +14,7 @@ class User(Base):
     __tablename__ = "users"
     
     id = Column(String(255), primary_key=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     phone = Column(String(20), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

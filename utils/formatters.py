@@ -48,6 +48,7 @@ class ResponseFormatter:
         return {
             "id": user.id,
             "email": user.email,
+            "username": getattr(user, 'username', None),
             "phone": user.phone,
             "interests": interests if isinstance(interests, list) else [],
             "skills": skills if isinstance(skills, list) else [],
@@ -62,7 +63,7 @@ class ResponseFormatter:
         }
     
     @staticmethod
-    def format_opportunity_response(opportunity, tracked_count: int = 0) -> Dict[str, Any]:
+    def format_opportunity_response(opportunity, tracked_count: int = 0, participant_count: int = 0, source_registration_count: int = 0) -> Dict[str, Any]:
         """Format opportunity data for API response.
         
         Ensures all opportunity fields are included in the response with proper formatting.
@@ -70,6 +71,8 @@ class ResponseFormatter:
         Args:
             opportunity: Opportunity model instance
             tracked_count: Number of users tracking this opportunity
+            participant_count: Number of users participating in this opportunity
+            source_registration_count: Number of users registered on the source site
             
         Returns:
             Dictionary containing formatted opportunity data
@@ -80,22 +83,33 @@ class ResponseFormatter:
         # Parse JSON fields if they're strings
         tags = json.loads(opportunity.tags) if isinstance(opportunity.tags, str) else opportunity.tags
         required_skills = json.loads(opportunity.required_skills) if isinstance(opportunity.required_skills, str) else opportunity.required_skills
+        timeline = json.loads(opportunity.timeline) if hasattr(opportunity, 'timeline') and isinstance(opportunity.timeline, str) else getattr(opportunity, 'timeline', [])
+        prizes = json.loads(opportunity.prizes) if hasattr(opportunity, 'prizes') and isinstance(opportunity.prizes, str) else getattr(opportunity, 'prizes', [])
         
+        # Safety fallback for counts if not passed
+        final_tracked = tracked_count or getattr(opportunity, 'tracked_count', 0)
+        final_participant = participant_count or getattr(opportunity, 'participant_count', 0)
+        final_source_reg = source_registration_count or getattr(opportunity, 'source_registration_count', 0)
+
         return {
             "id": opportunity.id,
             "title": opportunity.title,
             "description": opportunity.description,
             "type": opportunity.type,
-            "deadline": opportunity.deadline.isoformat() if opportunity.deadline else None,
+            "deadline": opportunity.deadline.isoformat() if hasattr(opportunity.deadline, 'isoformat') else str(opportunity.deadline) if opportunity.deadline else None,
             "application_link": opportunity.application_link,
             "image_url": getattr(opportunity, 'image_url', None),
             "tags": tags if isinstance(tags, list) else [],
             "required_skills": required_skills if isinstance(required_skills, list) else [],
+            "timeline": timeline if isinstance(timeline, list) else [],
+            "prizes": prizes if isinstance(prizes, list) else [],
             "eligibility": opportunity.eligibility,
             "status": opportunity.status,
-            "tracked_count": tracked_count,
-            "created_at": opportunity.created_at.isoformat() if opportunity.created_at else None,
-            "updated_at": opportunity.updated_at.isoformat() if opportunity.updated_at else None
+            "tracked_count": final_tracked,
+            "participant_count": final_participant,
+            "source_registration_count": final_source_reg,
+            "created_at": opportunity.created_at.isoformat() if hasattr(opportunity.created_at, 'isoformat') else str(opportunity.created_at) if opportunity.created_at else None,
+            "updated_at": opportunity.updated_at.isoformat() if hasattr(opportunity.updated_at, 'isoformat') else str(opportunity.updated_at) if opportunity.updated_at else None
         }
     
     @staticmethod
@@ -244,6 +258,7 @@ class ResponseFormatter:
             "user": {
                 "id": user.id,
                 "email": user.email,
+                "username": getattr(user, 'username', None),
                 "phone": user.phone,
                 "created_at": user.created_at.isoformat() if user.created_at else None,
                 "updated_at": user.updated_at.isoformat() if user.updated_at else None

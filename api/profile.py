@@ -1,6 +1,5 @@
-"""Profile management API endpoints."""
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -191,3 +190,54 @@ async def export_user_data(
         )
     
     return export_data
+
+
+@router.post("/profile/resume", response_model=ProfileResponse)
+async def upload_resume(
+    file: UploadFile = File(...),
+    current_user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Upload and parse a resume to update the user's profile.
+    
+    Args:
+        file: The PDF resume file
+        current_user_id: Current user ID from authentication token
+        db: Database session
+        
+    Returns:
+        Updated profile information based on resume parsing
+        
+    Raises:
+        HTTPException: If file is not a PDF or parsing fails
+    """
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF files are supported for resume parsing."
+        )
+    
+    profile_service = ProfileService(db)
+    
+    try:
+        content = await file.read()
+        profile_data = profile_service.update_profile_from_resume(current_user_id, content)
+        
+        if not profile_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Profile not found"
+            )
+            
+        return ProfileResponse(**profile_data)
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to parse resume: {str(e)}"
+        )

@@ -37,6 +37,7 @@ class TrackerService:
             IntegrityError: If opportunity is already tracked by user
         """
         from services.notification_service import NotificationService
+        from services.gamification_service import GamificationService
         
         # Verify opportunity exists
         opportunity = self.db.query(Opportunity).filter(
@@ -61,6 +62,10 @@ class TrackerService:
             
             # Increment the tracked count for the Trending Algorithm
             opportunity.tracked_count += 1
+            
+            # AWARD XP: 10 XP for tracking an opportunity
+            gamification = GamificationService(self.db)
+            gamification.award_xp(user_id, "track", reference_id=opportunity_id)
             
             self.db.commit()
             
@@ -184,6 +189,19 @@ class TrackerService:
         Returns:
             Dictionary containing formatted tracked opportunity data
         """
+        # Get team status for this opportunity
+        from models.team import Team, TeamMember
+        team_member = self.db.query(TeamMember).join(Team).filter(
+            Team.opportunity_id == opportunity.id,
+            TeamMember.user_id == tracked.user_id
+        ).first()
+
+        team_status = "solo"
+        team_id = None
+        if team_member:
+            team_status = "leader" if team_member.role == "leader" else "member"
+            team_id = team_member.team_id
+
         # Use centralized formatter
         opportunity_data = ResponseFormatter.format_opportunity_response(opportunity)
         
@@ -192,5 +210,7 @@ class TrackerService:
             "opportunity_id": tracked.opportunity_id,
             "saved_at": tracked.saved_at.isoformat(),
             "is_expired": tracked.is_expired,
+            "team_status": team_status,
+            "team_id": team_id,
             "opportunity": opportunity_data
         }

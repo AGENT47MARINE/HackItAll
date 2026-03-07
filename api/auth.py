@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api/auth", tags=["authentication"])
 class RegisterRequest(BaseModel):
     """Request model for user registration."""
     email: EmailStr
+    username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
     education_level: str = Field(..., min_length=1, description="Education level is required")
     interests: list[str] = Field(default_factory=list)
@@ -58,7 +59,8 @@ class TokenResponse(BaseModel):
 class UserResponse(BaseModel):
     """Response model for user data."""
     id: str
-    email: str
+    email: EmailStr
+    username: str
     phone: Optional[str]
     interests: list[str]
     skills: list[str]
@@ -66,7 +68,6 @@ class UserResponse(BaseModel):
     notification_email: bool
     notification_sms: bool
     low_bandwidth_mode: bool
-    created_at: str
     updated_at: str
 
 
@@ -131,14 +132,29 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
                     except:
                         email = f"user_{user_id[:8]}@temporary.com"
                 
+                # Extract username or handle from Clerk
+                clerk_username = token_payload.payload.get("username")
+                if not clerk_username:
+                     # Fallback to email prefix or random string
+                     clerk_username = email.split('@')[0] if email else f"user_{user_id[:8]}"
+                
                 profile_service = ProfileService(db)
                 profile_service.create_profile(
                     user_id=user_id,
                     email=email or f"user_{user_id[:8]}@temporary.com",
+                    username=clerk_username,
                     education_level="Not Specified",
                     interests=[],
                     skills=[]
                 )
+            
+            # AWARD XP: 10 XP for daily login (once per day)
+            from services.gamification_service import GamificationService
+            from datetime import datetime
+            gamification = GamificationService(db)
+            today_str = datetime.utcnow().strftime("%Y-%m-%d")
+            gamification.award_xp(user_id, "daily_login", reference_id=f"login_{today_str}")
+                
         finally:
             db.close()
              

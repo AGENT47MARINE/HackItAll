@@ -25,7 +25,11 @@ class Opportunity(Base):
     location_type = Column(String(50), nullable=False, default="Online", index=True)  # Online, In-Person, Hybrid
     source_url = Column(String(1000), nullable=True, unique=True)  # Used for dedup during scraping
     status = Column(String(20), default="active", nullable=False, index=True)  # active, archived
-    tracked_count = Column(Integer, default=0, nullable=False, index=True) # Used for Trending Algorithm
+    tracked_count = Column(Integer, default=0, nullable=False, index=True) # Opportunity saves
+    participant_count = Column(Integer, default=0, nullable=False, index=True) # Active participation entries
+    source_registration_count = Column(Integer, default=0, nullable=False, index=True) # External popularity
+    timeline = Column(Text, nullable=True, default="[]") # JSON array of {label, date}
+    prizes = Column(Text, nullable=True, default="[]") # JSON array of {label, value}
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
