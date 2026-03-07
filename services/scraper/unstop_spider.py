@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import List, Dict, Any
 import json
 import re
+import time
 
 
 class UnstopSpider:
@@ -25,43 +26,53 @@ class UnstopSpider:
             "Referer": "https://unstop.com/hackathons",
         })
 
-    def scrape(self, max_results: int = 20) -> List[Dict[str, Any]]:
-        """Scrape hackathon listings from Unstop's public API.
+    def scrape(self, max_results: int = 20, opportunity_type: str = "hackathons") -> List[Dict[str, Any]]:
+        """Scrape listings from Unstop's public API.
 
         Args:
-            max_results: Maximum number of results to fetch (default 20).
+            max_results: Maximum number of results to fetch.
+            opportunity_type: The type of opportunity (hackathons, internships, scholarships, workshops, etc.)
 
         Returns:
             List of dicts matching the Opportunity schema.
         """
         results = []
+        retries = 3
 
-        try:
-            # Unstop exposes a public JSON API for search results
-            params = {
-                "opportunity": "hackathons",
-                "per_page": str(min(max_results, 20)),
-                "oppstatus": "open",
-                "page": "1",
-            }
+        for i in range(retries):
+            try:
+                # Unstop exposes a public JSON API for search results
+                params = {
+                    "opportunity": opportunity_type,
+                    "per_page": str(min(max_results, 50)),
+                    "oppstatus": "open",
+                    "page": "1",
+                }
 
-            response = self.session.get(self.LISTING_URL, params=params, timeout=15)
-            response.raise_for_status()
-            data = response.json()
+                response = self.session.get(self.LISTING_URL, params=params, timeout=15)
+                response.raise_for_status()
+                data = response.json()
 
-            opportunities = data.get("data", {}).get("data", [])
+                opportunities = data.get("data", {}).get("data", [])
 
-            for opp in opportunities[:max_results]:
-                parsed = self._parse_opportunity(opp)
-                if parsed:
-                    results.append(parsed)
+                for opp in opportunities[:max_results]:
+                    parsed = self._parse_opportunity(opp)
+                    if parsed:
+                        results.append(parsed)
+                
+                # If we successfully got results, break the retry loop
+                if results:
+                    break
 
-        except requests.exceptions.RequestException as e:
-            print(f"[UnstopSpider] Network error: {e}")
-        except (ValueError, KeyError) as e:
-            print(f"[UnstopSpider] Parse error: {e}")
-            # Fallback: try HTML scraping
-            results = self._scrape_html_fallback(max_results)
+            except (requests.exceptions.RequestException, ValueError, KeyError) as e:
+                print(f"[UnstopSpider] Attempt {i+1} failed: {e}")
+                if i < retries - 1:
+                    time.sleep(2)
+                    continue
+                else:
+                    print(f"[UnstopSpider] Max retries reached. Falling back to HTML scraping.")
+                    # Fallback: try HTML scraping
+                    results = self._scrape_html_fallback(max_results)
 
         print(f"[UnstopSpider] Scraped {len(results)} hackathons from Unstop")
         return results
@@ -114,8 +125,8 @@ class UnstopSpider:
             else:
                 source_url = f"{self.BASE_URL}/hackathons/{opp.get('id', '')}"
 
-            # Image
-            image_url = opp.get("logoUrl2") or opp.get("logoUrl") or opp.get("banner", "")
+            # Image - Prioritize banner for better visual relevance
+            image_url = opp.get("banner") or opp.get("logoUrl2") or opp.get("logoUrl", "")
 
             # Eligibility
             eligibility = opp.get("eligibility", "Open to all")
@@ -136,6 +147,8 @@ class UnstopSpider:
                 "location": "India" if not is_online else "Online",
                 "source_url": source_url,
                 "status": "active",
+                "source_registration_count": opp.get("registerCount", 0),
+                "source_views_count": opp.get("viewsCount", 0)
             }
         except Exception as e:
             print(f"[UnstopSpider] Failed to parse opportunity: {e}")

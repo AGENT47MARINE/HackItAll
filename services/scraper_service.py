@@ -125,34 +125,81 @@ class ScraperService:
         return None
 
     def _extract_keywords(self, body_text: str, meta_text: str) -> Tuple[str, str]:
-        """Simple heuristic keyword matching to deduce skills and categorization tags."""
+        """Heuristic keyword matching to deduce skills and categorization tags.
+        
+        Expanded to cover a wide range of tech domains including cybersecurity,
+        data science, hardware, design, gaming, DevOps, and cloud platforms.
+        """
         import json
         
-        # Pre-defined list of common tech hackathon skills
+        # Comprehensive tech skills dictionary
         tech_skills = {
-            "python": "Python", "javascript": "JavaScript", "react": "React", 
-            "node": "Node.js", "java ": "Java", "c++": "C++", "html": "HTML", 
-            "css": "CSS", "sql": "SQL", "aws": "AWS", "gcp": "GCP", 
-            "azure": "Azure", "docker": "Docker", "kubernetes": "Kubernetes",
-            "machine learning": "Machine Learning", "ml": "Machine Learning", 
-            "ai ": "AI", "artificial intelligence": "AI", 
-            "tensorflow": "TensorFlow", "pytorch": "PyTorch", 
-            "nlp": "NLP", "blockchain": "Blockchain", "web3": "Web3"
+            # Languages
+            "python": "Python", "javascript": "JavaScript", "typescript": "TypeScript",
+            "react": "React", "angular": "Angular", "vue": "Vue.js",
+            "node": "Node.js", "java ": "Java", "kotlin": "Kotlin", "swift": "Swift",
+            "c++": "C++", "c#": "C#", "rust": "Rust", "golang": "Go", "go ": "Go",
+            "ruby": "Ruby", "php": "PHP", "html": "HTML", "css": "CSS",
+            "sql": "SQL", "graphql": "GraphQL", "r ": "R",
+            # AI / ML / Data
+            "machine learning": "Machine Learning", "ml ": "Machine Learning",
+            "deep learning": "Deep Learning", "ai ": "AI", "artificial intelligence": "AI",
+            "tensorflow": "TensorFlow", "pytorch": "PyTorch", "keras": "Keras",
+            "nlp": "NLP", "computer vision": "Computer Vision", "opencv": "OpenCV",
+            "data science": "Data Science", "data analysis": "Data Analysis",
+            "pandas": "Pandas", "scikit": "Scikit-learn",
+            "large language model": "LLM", "llm": "LLM", "generative ai": "Generative AI",
+            # Cloud & DevOps
+            "aws": "AWS", "gcp": "GCP", "azure": "Azure",
+            "docker": "Docker", "kubernetes": "Kubernetes", "terraform": "Terraform",
+            "ci/cd": "CI/CD", "devops": "DevOps",
+            # Security
+            "cybersecurity": "Cybersecurity", "cyber security": "Cybersecurity",
+            "penetration testing": "Penetration Testing", "ethical hacking": "Ethical Hacking",
+            "ctf": "CTF", "capture the flag": "CTF",
+            "infosec": "InfoSec", "malware": "Malware Analysis",
+            "cryptography": "Cryptography", "encryption": "Encryption",
+            # Web3 & Blockchain
+            "blockchain": "Blockchain", "web3": "Web3", "solidity": "Solidity",
+            "ethereum": "Ethereum", "smart contract": "Smart Contracts", "defi": "DeFi",
+            "nft": "NFT",
+            # Hardware & IoT
+            "arduino": "Arduino", "raspberry pi": "Raspberry Pi",
+            "iot": "IoT", "internet of things": "IoT",
+            "embedded": "Embedded Systems", "robotics": "Robotics", "3d print": "3D Printing",
+            "hardware": "Hardware",
+            # Design
+            "figma": "Figma", "ui/ux": "UI/UX", "ux design": "UX Design",
+            "ui design": "UI Design", "user experience": "UX Design",
+            # Gaming
+            "unity": "Unity", "unreal": "Unreal Engine", "game dev": "Game Development",
+            "godot": "Godot",
         }
         
         found_skills = set()
         for key, display_name in tech_skills.items():
-            # Check if skill keyword exists in body or metadata
             if f" {key} " in f" {body_text} " or f" {key} " in f" {meta_text} ":
                 found_skills.add(display_name)
                 
-        # Generate some generic tags based on the text
+        # Expanded categorization tags
         tags = set()
-        if "hackathon" in body_text: tags.add("Hackathon")
-        if "workshop" in body_text: tags.add("Workshop")
-        if "beginner" in body_text: tags.add("Beginner Friendly")
-        if "open source" in body_text: tags.add("Open Source")
-        if "prize" in body_text or "win" in body_text: tags.add("Prizes")
+        tag_rules = {
+            "hackathon": "Hackathon", "workshop": "Workshop", "conference": "Conference",
+            "beginner": "Beginner Friendly", "open source": "Open Source",
+            "prize": "Prizes", " win ": "Prizes",
+            "sustainability": "Sustainability", "climate": "Climate Tech",
+            "health": "HealthTech", "medtech": "MedTech", "fintech": "FinTech",
+            "edtech": "EdTech", "social impact": "Social Impact",
+            "women in tech": "Diversity", "diversity": "Diversity",
+            "virtual": "Virtual", "hybrid": "Hybrid", "in-person": "In-Person",
+            "cybersecurity": "Cybersecurity", "ctf": "CTF",
+            "game jam": "Game Jam", "datathon": "Datathon",
+            "designathon": "Designathon", "ideathon": "Ideathon",
+            "startup": "Startup", "entrepreneurship": "Entrepreneurship",
+        }
+        for key, tag_name in tag_rules.items():
+            if key in body_text:
+                tags.add(tag_name)
         
         # Return as JSON strings for the database
         return json.dumps(list(found_skills)), json.dumps(list(tags))
