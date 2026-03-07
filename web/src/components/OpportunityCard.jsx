@@ -1,9 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import PixelLogo from './PixelLogo';
 import './OpportunityCard.css';
 
 export default function OpportunityCard({ opportunity, relevanceScore, onRemove }) {
   const [offset, setOffset] = useState(157); // Circumference for r=25 is ~157
+  const [imageError, setImageError] = useState(false);
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
 
   useEffect(() => {
     if (relevanceScore) {
@@ -61,17 +67,32 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
         </div>
       )}
 
-      {opportunity.image_url && (
-        <div className="card-image-container">
-          <img src={opportunity.image_url} alt={opportunity.title} className="card-image" />
-        </div>
-      )}
+      <div className="card-image-container">
+        {opportunity.image_url && !imageError ? (
+          <img
+            src={opportunity.image_url}
+            alt={opportunity.title}
+            className="card-image"
+            onError={handleImageError}
+          />
+        ) : (
+          <div className="image-fallback">
+            <PixelLogo />
+          </div>
+        )}
+      </div>
 
       <div className="card-header">
         <span className="type-badge">{opportunity.type.replace('_', ' ')}</span>
         <div className="card-header-badges">
+          {opportunity.source_registration_count > 0 && (
+            <span className="global-badge" title="Registered on Source Site">🌐 {opportunity.source_registration_count.toLocaleString()}</span>
+          )}
+          {opportunity.participant_count > 0 && (
+            <span className="participant-badge" title="Active Participants">🎯 {opportunity.participant_count}</span>
+          )}
           {opportunity.tracked_count > 0 && (
-            <span className="tracked-badge">🔥 {opportunity.tracked_count}</span>
+            <span className="tracked-badge" title="Saves">🔥 {opportunity.tracked_count}</span>
           )}
         </div>
       </div>

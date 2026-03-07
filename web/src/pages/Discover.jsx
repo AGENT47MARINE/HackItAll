@@ -109,7 +109,7 @@ export default function Discover() {
                         Trending <span className="gradient-text">Now 🔥</span>
                     </h1>
                     <p className="opportunities-subtitle">
-                        The most tracked and popular opportunities happening right now in the HackItAll community.
+                        Opportunities with the highest engagement and active participants in the HackItAll community.
                     </p>
                 </div>
 

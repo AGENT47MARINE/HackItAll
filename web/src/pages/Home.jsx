@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { opportunitiesAPI } from '../services/api';
 import OpportunityCard from '../components/OpportunityCard';
 import AsciiBackground from '../components/AsciiBackground';
+import PixelLogo from '../components/PixelLogo';
 import './Home.css';
 
 export default function Home() {
@@ -10,6 +11,9 @@ export default function Home() {
   const [trendingOpportunities, setTrendingOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [scrapeUrl, setScrapeUrl] = useState('');
+  const [isScraping, setIsScraping] = useState(false);
+  const [scrapeError, setScrapeError] = useState('');
 
   useEffect(() => {
     loadOpportunities();
@@ -35,16 +39,42 @@ export default function Home() {
     }
   };
 
+  const handleScrape = async (e) => {
+    e.preventDefault();
+    if (!scrapeUrl.trim()) return;
+    
+    setIsScraping(true);
+    setScrapeError('');
+    
+    try {
+      // Import trackingAPI dynamically if needed or just use opportunitiesAPI if we want to just go to detail
+      // trackingAPI.scrapeOpportunity performs the scrape + auto-track
+      const { trackingAPI } = await import('../services/api');
+      const result = await trackingAPI.scrapeOpportunity(scrapeUrl);
+      
+      if (result && result.id) {
+        window.location.href = `/opportunities/${result.id}`;
+      } else if (result && result.opportunity && result.opportunity.id) {
+        window.location.href = `/opportunities/${result.opportunity.id}`;
+      }
+    } catch (error) {
+      console.error('Error scraping URL:', error);
+      setScrapeError(error.response?.data?.detail || 'Failed to scrape URL. Please try again.');
+    } finally {
+      setIsScraping(false);
+    }
+  };
+
   const stats = [
-    { label: 'Active Opportunities', value: '10,000+' },
-    { label: 'Students Helped', value: '50,000+' },
-    { label: 'Success Rate', value: '85%' },
+    { label: 'Active Opportunities', value: `${loading ? '...' : featuredOpportunities.length + 20}+` },
+    { label: 'Active Students', value: '100+' },
+    { label: 'Success Rate', value: '92%' },
   ];
 
   return (
     <div className="home-container">
       <AsciiBackground />
-      
+
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-content">
@@ -56,24 +86,49 @@ export default function Home() {
             <span className="gradient-text"> Opportunity</span>
           </h1>
           <p className="hero-subtitle">
-            HackItAll connects students with hackathons, scholarships, internships, and skill programs.
+            Discover elite hackathons, scholarships, and internships.
             <br />
-            Browse freely. Register only when you're ready to track.
+            Track deadlines and never miss your next win.
           </p>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="hero-search">
-            <input
-              type="text"
-              placeholder="Search opportunities..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input-hero"
-            />
-            <button type="submit" className="search-button-hero">
-              Search
-            </button>
-          </form>
+          {/* Main Search/Scrape Actions */}
+          <div className="hero-actions">
+            <form onSubmit={handleSearch} className="hero-search">
+              <input
+                type="text"
+                placeholder="Search hackathons, scholarships..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input-hero"
+              />
+              <button type="submit" className="search-button-hero">
+                Search
+              </button>
+            </form>
+
+            <div className="search-divider">
+              <span>OR</span>
+            </div>
+
+            <form onSubmit={handleScrape} className="hero-scrape">
+              <input
+                type="url"
+                placeholder="Paste any opportunity URL to track instant..."
+                value={scrapeUrl}
+                onChange={(e) => setScrapeUrl(e.target.value)}
+                className="scrape-input-hero"
+                disabled={isScraping}
+              />
+              <button 
+                type="submit" 
+                className={`scrape-button-hero ${isScraping ? 'scraping' : ''}`}
+                disabled={isScraping}
+              >
+                {isScraping ? 'AI SCRAPING...' : 'TRACK VIA URL'}
+              </button>
+            </form>
+            {scrapeError && <p className="scrape-error">{scrapeError}</p>}
+          </div>
 
           {/* Stats */}
           <div className="stats-grid">

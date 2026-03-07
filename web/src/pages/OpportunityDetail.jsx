@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { opportunitiesAPI, trackingAPI } from '../services/api';
 import GridBackground from '../components/GridBackground';
 import PixelLogo from '../components/PixelLogo';
+import TeamSection from '../components/TeamSection';
 import './Pages.css';
 
 export default function OpportunityDetail() {
@@ -135,6 +136,14 @@ export default function OpportunityDetail() {
       </div>
 
       <div className="detail-content">
+        {/* Hero Image */}
+        {opportunity.image_url && (
+          <div className="detail-hero-image-container">
+            <img src={opportunity.image_url} alt={opportunity.title} className="detail-hero-image" />
+            <div className="detail-hero-overlay"></div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="detail-header-modern">
           <div className="detail-header-top">
@@ -207,6 +216,42 @@ export default function OpportunityDetail() {
             <p className="detail-text">{opportunity.description}</p>
           </div>
 
+          {/* Timeline */}
+          {opportunity.timeline && opportunity.timeline.length > 0 && (
+            <div className="detail-card timeline-card">
+              <h2 className="detail-card-title">📅 Event Timeline</h2>
+              <div className="vertical-timeline-modern">
+                {opportunity.timeline.map((event, index) => (
+                  <div key={index} className="timeline-item-modern">
+                    <div className="timeline-dot-modern"></div>
+                    <div className="timeline-content-modern">
+                      <span className="timeline-label-modern">{event.label}</span>
+                      <span className="timeline-date-modern">{formatDate(event.date)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Prizes */}
+          {opportunity.prizes && opportunity.prizes.length > 0 && (
+            <div className="detail-card prizes-card">
+              <h2 className="detail-card-title">🏆 Prizes & Rewards</h2>
+              <div className="prizes-grid-modern">
+                {opportunity.prizes.map((prize, index) => (
+                  <div key={index} className="prize-item-modern">
+                    <div className="prize-icon-modern">✨</div>
+                    <div className="prize-info-modern">
+                      <span className="prize-label-modern">{prize.label}</span>
+                      <span className="prize-value-modern">{prize.value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Required Skills */}
           {opportunity.required_skills && opportunity.required_skills.length > 0 && (
             <div className="detail-card">
@@ -216,6 +261,14 @@ export default function OpportunityDetail() {
                   <span key={index} className="tag-modern skill-tag">{skill}</span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Eligibility */}
+          {opportunity.eligibility && (
+            <div className="detail-card">
+              <h2 className="detail-card-title">Eligibility</h2>
+              <p className="detail-text">{opportunity.eligibility}</p>
             </div>
           )}
 
@@ -231,12 +284,9 @@ export default function OpportunityDetail() {
             </div>
           )}
 
-          {/* Eligibility */}
-          {opportunity.eligibility && (
-            <div className="detail-card">
-              <h2 className="detail-card-title">Eligibility</h2>
-              <p className="detail-text">{opportunity.eligibility}</p>
-            </div>
+          {/* Teams for Hackathons */}
+          {opportunity.type === 'hackathon' && (
+            <TeamSection opportunityId={opportunity.id} />
           )}
         </div>
 

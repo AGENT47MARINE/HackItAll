@@ -360,9 +360,9 @@ export default function HomeScrollStory() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.7 }}
           >
-            Discover hackathons, scholarships, internships & skill programs.
+            Discover elite hackathons, scholarships, and internships.
             <br />
-            Track deadlines. Never miss an opportunity.
+            Track deadlines and never miss your next win.
           </motion.p>
 
           {/* ── Link Input Box ────────────────────────────────────── */}
@@ -432,7 +432,7 @@ export default function HomeScrollStory() {
             <span className="label-line" />
           </div>
           <h2 className="section-heading">Opportunities for <span className="heading-accent">You</span></h2>
-          <p className="section-sub">Curated hackathons, scholarships, and programs handpicked for students</p>
+          <p className="section-sub">Curated hackathons, scholarships, and placement-ready programs for Indian students</p>
         </motion.div>
 
         <div

@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
 import api from '../services/api';
 import PixelLogo from './PixelLogo';
+import PixelIcon from './PixelIcon';
 import './Layout.css';
 
 export default function Layout() {
@@ -49,6 +50,10 @@ export default function Layout() {
             <SignedIn>
               <Link to="/tracked" className={`nav-link ${isActive('/tracked')}`}>
                 Saved
+              </Link>
+              <Link to="/leagues" className={`nav-link ${isActive('/leagues')}`}>
+                <PixelIcon name="trophy" size={18} color="var(--pixel-gold)" active={isActive('/leagues')} />
+                <span style={{ marginLeft: '4px' }}>Leagues</span>
               </Link>
               <Link to="/profile" className={`nav-link ${isActive('/profile')}`}>
                 Profile

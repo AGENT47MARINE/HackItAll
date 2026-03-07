@@ -10,6 +10,7 @@ import Tracked from './pages/Tracked';
 import Discover from './pages/Discover';
 import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
+import Leagues from './pages/Leagues';
 import Layout from './components/Layout';
 
 function App() {
@@ -57,6 +58,16 @@ function App() {
             <>
               <SignedIn>
                 <Profile />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          } />
+          <Route path="leagues" element={
+            <>
+              <SignedIn>
+                <Leagues />
               </SignedIn>
               <SignedOut>
                 <RedirectToSignIn />
