@@ -36,6 +36,17 @@ export const profileAPI = {
     const response = await api.put('/profile', profileData);
     return response.data;
   },
+
+  uploadResume: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/profile/resume', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 
 // Opportunities API
@@ -83,7 +94,7 @@ export const trackingAPI = {
 
   scrapeOpportunity: async (url) => {
     // First, scrape the opportunity into the DB
-    const scrapeResponse = await api.post('/opportunities/scrape', { url });
+    const scrapeResponse = await api.post('/opportunities/scrape-url', { url });
     const opportunityId = scrapeResponse.data.id;
 
     // Then, automatically track it for the user
@@ -122,6 +133,50 @@ export const trackingAPI = {
 
   getParticipationHistory: async () => {
     const response = await api.get('/participation');
+    return response.data;
+  },
+};
+
+// Teams API
+export const teamsAPI = {
+  createTeam: async (opportunityId, teamData) => {
+    const response = await api.post(`/teams/opportunity/${opportunityId}`, teamData);
+    return response.data;
+  },
+
+  getTeamsForOpportunity: async (opportunityId) => {
+    // No auth required for viewing teams
+    const response = await axios.get(`/api/teams/opportunity/${opportunityId}`);
+    return response.data;
+  },
+
+  getTeam: async (teamId) => {
+    const response = await axios.get(`/api/teams/${teamId}`);
+    return response.data;
+  },
+
+  requestToJoinTeam: async (teamId, message) => {
+    const response = await api.post(`/teams/${teamId}/join`, { message });
+    return response.data;
+  },
+
+  getTeamRequests: async (teamId) => {
+    const response = await api.get(`/teams/${teamId}/requests`);
+    return response.data;
+  },
+
+  processTeamRequest: async (requestId, action) => {
+    const response = await api.put(`/teams/requests/${requestId}/${action}`);
+    return response.data;
+  },
+
+  recommendMembers: async (teamId) => {
+    const response = await api.get(`/teams/${teamId}/recommend-members`);
+    return response.data;
+  },
+
+  recommendTeamsForMe: async (opportunityId) => {
+    const response = await api.get(`/teams/recommended/for-me${opportunityId ? `?opportunity_id=${opportunityId}` : ''}`);
     return response.data;
   },
 };

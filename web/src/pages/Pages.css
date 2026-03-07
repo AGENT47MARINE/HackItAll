@@ -802,6 +802,68 @@
   backdrop-filter: blur(10px);
 }
 
+.profile-actions-modern {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  animation: fadeInUp 0.8s ease 0.1s both;
+}
+
+.btn-modern {
+  padding: 0.875rem 2rem;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: none;
+}
+
+.btn-modern.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.btn-modern.secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.resume-btn {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.1) 0%, rgba(123, 97, 255, 0.1) 100%) !important;
+  border-color: rgba(0, 240, 255, 0.3) !important;
+  color: #00f0ff !important;
+}
+
+.resume-btn:hover:not(:disabled) {
+  border-color: #00f0ff !important;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2) !important;
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+}
+
+.loading-spinner-tiny {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
 .profile-title {
   font-size: 2rem;
   font-weight: 700;
@@ -993,9 +1055,36 @@
   padding: 4rem 2rem;
 }
 
+.detail-hero-image-container {
+  width: 100%;
+  height: 350px;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 3rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: fadeInUp 0.8s ease;
+}
+
+.detail-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.detail-hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(10, 10, 15, 0.8) 100%);
+}
+
 .detail-header-modern {
   margin-bottom: 3rem;
-  animation: fadeInUp 0.8s ease;
+  position: relative;
 }
 
 .detail-header-top {
@@ -1165,4 +1254,120 @@
   .tracked-title {
     font-size: 2.5rem;
   }
+}
+
+/* Timeline Modern */
+.vertical-timeline-modern {
+  position: relative;
+  padding-left: 2rem;
+  margin-top: 1.5rem;
+}
+
+.vertical-timeline-modern::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, rgba(0, 240, 255, 0.5) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+.timeline-item-modern {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.timeline-item-modern:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-dot-modern {
+  position: absolute;
+  left: -1.75rem;
+  top: 0.25rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+  border: 2px solid #0a0a0f;
+  z-index: 2;
+}
+
+.timeline-content-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.timeline-label-modern {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.timeline-date-modern {
+  font-size: 0.9375rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-mono);
+}
+
+/* Prizes Modern */
+.prizes-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.prize-item-modern {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.prize-item-modern:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.prize-icon-modern {
+  font-size: 1.75rem;
+  background: rgba(255, 215, 0, 0.1);
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.prize-info-modern {
+  display: flex;
+  flex-direction: column;
+}
+
+.prize-label-modern {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.prize-value-modern {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  font-family: var(--font-mono);
 }

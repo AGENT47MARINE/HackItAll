@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import api from '../services/api';
+import { useState, useEffect, useRef } from 'react';
+import api, { profileAPI } from '../services/api';
 import GridBackground from '../components/GridBackground';
 import PixelLogo from '../components/PixelLogo';
 import './Pages.css';
@@ -7,6 +7,8 @@ import './Pages.css';
 export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     loadProfile();
@@ -14,12 +16,34 @@ export default function Profile() {
 
   const loadProfile = async () => {
     try {
-      const response = await api.get('/auth/me');
-      setProfile(response.data);
+      const data = await profileAPI.getProfile();
+      setProfile(data);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResumeUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      alert('Please upload a PDF file.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const updatedProfile = await profileAPI.uploadResume(file);
+      setProfile(updatedProfile);
+      alert('Resume parsed successfully! Your profile has been updated.');
+    } catch (error) {
+      console.error('Error uploading resume:', error);
+      alert('Failed to parse resume. Please try again or update manually.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -70,6 +94,32 @@ export default function Profile() {
               🔥 {profile.activity_streak} Week Streak
             </div>
           )}
+          <div className="profile-actions-modern">
+            <button
+              className="btn-modern secondary resume-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <>
+                  <span className="loading-spinner-tiny"></span>
+                  Parsing...
+                </>
+              ) : (
+                <>
+                  <span className="btn-icon">📄</span>
+                  AI Resume Sync
+                </>
+              )}
+            </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept=".pdf"
+              onChange={handleResumeUpload}
+            />
+          </div>
         </div>
 
         {/* Profile Grid */}
