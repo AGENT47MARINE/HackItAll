@@ -1,3 +1,8 @@
+import sys
+import pydantic
+print(f"DEBUG: sys.path = {sys.path}")
+print(f"DEBUG: pydantic file = {pydantic.__file__}")
+print(f"DEBUG: pydantic version = {pydantic.__version__}")
 """Main application entry point."""
 from contextlib import asynccontextmanager
 import logging
@@ -14,6 +19,8 @@ from api.tracking import router as tracking_router
 from api.webhook import router as webhook_router
 from api.educational import router as educational_router
 from api.utility import router as utility_router
+from api.gamification import router as gamification_router
+from api.team import router as team_router
 from middleware.error_handler import setup_error_handlers
 from middleware.rate_limiter import RateLimiter
 
@@ -74,7 +81,8 @@ app.include_router(tracking_router)
 app.include_router(webhook_router)
 app.include_router(educational_router)
 app.include_router(utility_router)
-
+app.include_router(gamification_router)
+app.include_router(team_router)
 
 @app.get("/")
 async def root():

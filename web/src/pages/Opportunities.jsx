@@ -9,22 +9,29 @@ export default function Opportunities() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState(null);
+  const [isAISearch, setIsAISearch] = useState(false);
 
   const types = ['hackathon', 'scholarship', 'internship', 'skill_program'];
 
   useEffect(() => {
-    searchOpportunities();
-  }, [selectedType]);
+    if (searchQuery || selectedType) {
+      searchOpportunities();
+    }
+  }, [selectedType, isAISearch]);
 
   const searchOpportunities = async () => {
     setLoading(true);
     try {
-      const params = {};
-      if (searchQuery) params.search = searchQuery;
-      if (selectedType) params.type = [selectedType];
-
-      const data = await opportunitiesAPI.search(params);
-      setOpportunities(data);
+      if (isAISearch && searchQuery) {
+        const data = await opportunitiesAPI.semanticSearch(searchQuery);
+        setOpportunities(data);
+      } else {
+        const params = {};
+        if (searchQuery) params.search = searchQuery;
+        if (selectedType) params.type = [selectedType];
+        const data = await opportunitiesAPI.search(params);
+        setOpportunities(data);
+      }
     } catch (error) {
       console.error('Error searching opportunities:', error);
     } finally {
@@ -58,32 +65,42 @@ export default function Opportunities() {
           <form onSubmit={handleSearch} className="search-form-modern">
             <input
               type="text"
-              placeholder="Search by title, organization, or keywords..."
+              placeholder={isAISearch ? "Describe what you're looking for (e.g., 'beginner AI hackathons')..." : "Search by title, organization, or keywords..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input-modern"
             />
             <button type="submit" className="search-button-modern">
-              Search
+              {isAISearch ? '🪄 AI Search' : 'Search'}
             </button>
           </form>
 
-          <div className="filter-chips-modern">
-            <button
-              className={`filter-chip-modern ${!selectedType ? 'active' : ''}`}
-              onClick={() => setSelectedType(null)}
-            >
-              All
-            </button>
-            {types.map((type) => (
+          <div className="flex-center-between mt-12">
+            <div className="filter-chips-modern">
               <button
-                key={type}
-                className={`filter-chip-modern ${selectedType === type ? 'active' : ''}`}
-                onClick={() => setSelectedType(type)}
+                className={`filter-chip-modern ${!selectedType ? 'active' : ''}`}
+                onClick={() => setSelectedType(null)}
               >
-                {type.replace('_', ' ')}
+                All
               </button>
-            ))}
+              {types.map((type) => (
+                <button
+                  key={type}
+                  className={`filter-chip-modern ${selectedType === type ? 'active' : ''}`}
+                  onClick={() => setSelectedType(type)}
+                >
+                  {type.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+
+            <div className={`ai-toggle-pill ${isAISearch ? 'active' : ''}`} onClick={() => setIsAISearch(!isAISearch)}>
+              <span className="ai-toggle-icon">✨</span>
+              <span className="ai-toggle-text">AI Mode</span>
+              <div className="ai-toggle-switch">
+                <div className="ai-toggle-handle" />
+              </div>
+            </div>
           </div>
         </div>
 

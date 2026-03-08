@@ -111,8 +111,8 @@ class DevpostSpider:
             if not tags:
                 tags = ["Hackathon"]
 
-            # Image
-            image_url = hack.get("thumbnail_url") or hack.get("open_state_banner_url", "")
+            # Image - Prioritize banner over thumbnail
+            image_url = hack.get("open_state_banner_url") or hack.get("thumbnail_url", "")
 
             # Prize
             prize = hack.get("prize_amount", "")
@@ -134,6 +134,7 @@ class DevpostSpider:
                 "location": "Online",
                 "source_url": source_url,
                 "status": "active",
+                "source_registration_count": hack.get("registrations_count", 0)
             }
         except Exception as e:
             print(f"[DevpostSpider] Failed to parse API hackathon: {e}")
@@ -219,6 +220,16 @@ class DevpostSpider:
             if not tags:
                 tags = ["Hackathon"]
 
+            # Participant count (Global registrations)
+            reg_count = 0
+            reg_el = tile.select_one(".participants strong")
+            if reg_el:
+                try:
+                    reg_text = reg_el.get_text(strip=True).replace(",", "")
+                    reg_count = int(reg_text)
+                except (ValueError, TypeError):
+                    reg_count = 0
+
             return {
                 "title": title[:200],
                 "description": f"Hackathon on Devpost: {title}",
@@ -233,6 +244,7 @@ class DevpostSpider:
                 "location": "Online",
                 "source_url": link,
                 "status": "active",
+                "source_registration_count": reg_count
             }
         except Exception as e:
             print(f"[DevpostSpider] Failed to parse HTML tile: {e}")

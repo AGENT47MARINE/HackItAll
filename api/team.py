@@ -63,6 +63,47 @@ class TeamRequestResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class BlueprintResponse(BaseModel):
+    """Response model for team sprint roadmap."""
+    roadmap: List[dict]
+    suggested_skeleton: str
+    role_assignments: Dict[str, str]
+
+    model_config = ConfigDict(from_attributes=True)
+
+class PitchResponse(BaseModel):
+    """Response model for AI pitch assets."""
+    elevator_pitch: str
+    demo_script: str
+    slide_blueprint: List[dict]
+
+    model_config = ConfigDict(from_attributes=True)
+
+class AuditRequest(BaseModel):
+    """Request model for submission audit."""
+    title: str
+    description: str
+    github_url: Optional[str] = None
+
+class AuditResponse(BaseModel):
+    """Response model for AI judge audit."""
+    winning_probability: float
+    red_flags: List[str]
+    improvements: List[str]
+    judge_persona_feedback: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BlueprintResponse(BaseModel):
+    """Response model for team sprint roadmap."""
+    roadmap: List[dict]
+    suggested_skeleton: str
+    role_assignments: Dict[str, str]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 @router.post("/opportunity/{opportunity_id}", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
 async def create_team(
     opportunity_id: int,
@@ -281,3 +322,61 @@ async def recommend_teams_for_user(
     """Find teams that need your skills."""
     matchmaker = TeamMatchmakerService(db)
     return matchmaker.recommend_teams_for_user(current_user.id, opportunity_id)
+
+
+@router.get("/{team_id}/blueprint", response_model=BlueprintResponse)
+async def get_team_blueprint(
+    team_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get AI-generated 48-hour sprint roadmap for a team."""
+    from services.squad_architect_service import SquadArchitectService
+    architect = SquadArchitectService(db)
+    
+    try:
+        blueprint = architect.generate_blueprint(team_id)
+        return blueprint
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Blueprint generation failed: {str(e)}"
+        )
+
+
+@router.get("/{team_id}/pitch", response_model=PitchResponse)
+async def get_team_pitch(
+    team_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get AI-generated high-stakes pitch assets for a team."""
+    from services.pitch_studio_service import PitchStudioService
+    studio = PitchStudioService(db)
+    
+    try:
+        pitch = studio.generate_pitch_assets(team_id)
+        return pitch
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Pitch generation failed: {str(e)}"
+        )
+
+
+@router.post("/{team_id}/audit", response_model=AuditResponse)
+async def audit_team_submission(
+    team_id: str,
+    audit_data: AuditRequest,
+    db: Session = Depends(get_db)
+):
+    """Run an AI Judge audit on a draft submission."""
+    from services.ai_judge_service import AIJudgeService
+    judge = AIJudgeService(db)
+    
+    try:
+        report = judge.audit_submission(team_id, audit_data.model_dump())
+        return report
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Audit failed: {str(e)}"
+        )

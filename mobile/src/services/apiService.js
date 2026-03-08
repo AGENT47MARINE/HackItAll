@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'http://10.0.2.2:8000/api'; // Android emulator localhost
 
 // Create axios instance
 const api = axios.create({
@@ -92,6 +92,16 @@ export const trackingAPI = {
     return response.data;
   },
 
+  scrapeOpportunity: async (url) => {
+    const scrapeResponse = await api.post('/opportunities/scrape', { url });
+    const opportunityId = scrapeResponse.data.id;
+    if (opportunityId) {
+      const trackResponse = await api.post('/tracked', { opportunity_id: opportunityId });
+      return trackResponse.data;
+    }
+    return scrapeResponse.data;
+  },
+
   getTracked: async () => {
     const response = await api.get('/tracked');
     return response.data;
@@ -120,6 +130,32 @@ export const trackingAPI = {
 
   getParticipationHistory: async () => {
     const response = await api.get('/participation');
+    return response.data;
+  },
+};
+
+// AI Features API
+export const aiAPI = {
+  analyzeFit: async (opportunityId) => {
+    const response = await api.get(`/opportunities/${opportunityId}/analyze-fit`);
+    return response.data;
+  },
+
+  getIdeas: async (opportunityId) => {
+    const response = await api.get(`/opportunities/${opportunityId}/ideas`);
+    return response.data;
+  },
+};
+
+// Gamification API
+export const gamificationAPI = {
+  getStats: async () => {
+    const response = await api.get('/gamification/stats');
+    return response.data;
+  },
+
+  getLeaderboard: async () => {
+    const response = await api.get('/gamification/leaderboard');
     return response.data;
   },
 };

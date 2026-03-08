@@ -54,6 +54,8 @@ class ParticipationService:
         if not opportunity:
             raise ValueError(f"Opportunity with id {opportunity_id} not found")
         
+        from services.gamification_service import GamificationService
+        
         # Create participation entry
         participation = ParticipationHistory(
             user_id=user_id,
@@ -63,6 +65,14 @@ class ParticipationService:
         )
         
         self.db.add(participation)
+        
+        # Increment the participant count for the Trending Algorithm
+        opportunity.participant_count += 1
+        
+        # AWARD XP: 25 for applied, 50 for accepted, 100 for completed
+        gamification = GamificationService(self.db)
+        gamification.award_xp(user_id, status, reference_id=f"{opportunity_id}_{status}")
+        
         self.db.commit()
         self.db.refresh(participation)
         
@@ -89,6 +99,8 @@ class ParticipationService:
         Raises:
             ValueError: If status is invalid
         """
+        from services.gamification_service import GamificationService
+        
         # Validate status if provided
         if status is not None and status not in self.VALID_STATUSES:
             raise ValueError(
@@ -107,6 +119,10 @@ class ParticipationService:
         # Update fields
         if status is not None:
             participation.status = status
+            # AWARD XP: 25 for applied, 50 for accepted, 100 for completed
+            gamification = GamificationService(self.db)
+            gamification.award_xp(user_id, status, reference_id=f"{participation.opportunity_id}_{status}")
+            
         if notes is not None:
             participation.notes = notes
         

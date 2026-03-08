@@ -57,6 +57,16 @@ def create_scheduler():
         replace_existing=True
     )
     logger.info("Scheduled job: Cleanup old reminders (daily at 2 AM)")
+
+    # Job 5: Daily Mega Scrape at 8 AM
+    scheduler.add_job(
+        SchedulerService.run_daily_mega_scrape,
+        trigger=CronTrigger(hour=8, minute=0),
+        id='mega_scrape_daily',
+        name='Daily High-Fidelity Mega Scrape',
+        replace_existing=True
+    )
+    logger.info("Scheduled job: Daily Mega Scrape (daily at 8 AM)")
     
     return scheduler
 

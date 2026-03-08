@@ -40,10 +40,10 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
 
   const daysLeft = getDaysUntilDeadline(opportunity.deadline);
   const isUrgent = daysLeft <= 7 && daysLeft > 0;
-  const isExpired = daysLeft < 0;
+  const isLiteMode = localStorage.getItem('liteMode') === 'true';
 
   return (
-    <div className={`opportunity-card ${isExpired ? 'expired' : ''}`}>
+    <div className={`opportunity-card ${isExpired ? 'expired' : ''} ${isLiteMode ? 'lite-card' : ''}`}>
       {/* Visual Match Score Ring (Stripes) */}
       {relevanceScore && (
         <div className="match-score-container" title={`${Math.round(relevanceScore * 100)}% Match`}>
@@ -67,20 +67,22 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
         </div>
       )}
 
-      <div className="card-image-container">
-        {opportunity.image_url && !imageError ? (
-          <img
-            src={opportunity.image_url}
-            alt={opportunity.title}
-            className="card-image"
-            onError={handleImageError}
-          />
-        ) : (
-          <div className="image-fallback">
-            <PixelLogo />
-          </div>
-        )}
-      </div>
+      {!isLiteMode && (
+        <div className="card-image-container">
+          {opportunity.image_url && !imageError ? (
+            <img
+              src={opportunity.image_url}
+              alt={opportunity.title}
+              className="card-image"
+              onError={handleImageError}
+            />
+          ) : (
+            <div className="image-fallback">
+              <PixelLogo />
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="card-header">
         <span className="type-badge">{opportunity.type.replace('_', ' ')}</span>

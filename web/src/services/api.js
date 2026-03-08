@@ -57,6 +57,13 @@ export const opportunitiesAPI = {
     return response.data;
   },
 
+  semanticSearch: async (query, limit = 10) => {
+    const response = await axios.get('/api/opportunities/search/semantic', {
+      params: { q: query, limit }
+    });
+    return response.data;
+  },
+
   getById: async (id) => {
     // No auth required for viewing details
     const response = await axios.get(`/api/opportunities/${id}`);
@@ -81,6 +88,12 @@ export const opportunitiesAPI = {
 
   getIdeas: async (id) => {
     const response = await api.get(`/opportunities/${id}/ideas`);
+    return response.data;
+  },
+
+  getScoutAnalysis: async (id) => {
+    // Strategic 'Alpha' scout report
+    const response = await api.get(`/api/opportunities/${id}/scout`);
     return response.data;
   },
 };
@@ -179,6 +192,34 @@ export const teamsAPI = {
     const response = await api.get(`/teams/recommended/for-me${opportunityId ? `?opportunity_id=${opportunityId}` : ''}`);
     return response.data;
   },
+
+  getBlueprint: async (teamId) => {
+    // 48-hour AI Sprint Roadmap
+    const response = await api.get(`/api/teams/${teamId}/blueprint`);
+    return response.data;
+  },
+
+  getPitch: async (teamId) => {
+    // Strategic Pitch Assets
+    const response = await api.get(`/api/teams/${teamId}/pitch`);
+    return response.data;
+  },
+
+  auditSubmission: async (teamId, data) => {
+    // AI Judge Submission Audit
+    const response = await api.post(`/api/teams/${teamId}/audit`, data);
+    return response.data;
+  },
 };
+
+// Interceptor to add Low-Bandwidth header if enabled
+api.interceptors.request.use((config) => {
+  const isLiteMode = localStorage.getItem('liteMode') === 'true';
+  if (isLiteMode) {
+    config.headers['X-Low-Bandwidth'] = 'true';
+    config.headers['Accept-Encoding'] = 'gzip'; // Request compression
+  }
+  return config;
+});
 
 export default api;

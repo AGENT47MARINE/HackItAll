@@ -22,7 +22,7 @@ def run_batch_scrape():
     print("Starting batch scrape from Unstop...")
     try:
         unstop = UnstopSpider()
-        unstop_results = unstop.scrape(max_results=10)
+        unstop_results = unstop.scrape(max_results=50)
         all_scraped.extend(unstop_results)
     except Exception as e:
         errors.append(f"Unstop spider failed: {str(e)}")

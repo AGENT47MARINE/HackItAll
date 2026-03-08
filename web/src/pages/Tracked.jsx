@@ -346,6 +346,15 @@ export default function Tracked() {
                           Visit ↗
                         </a>
                       )}
+                      {item.team_status !== 'solo' && (
+                        <button
+                          className="card-action-btn visit-btn flex items-center gap-1"
+                          style={{ borderColor: '#ef4444', color: '#ef4444' }}
+                          onClick={() => window.location.href = `/teams/${item.team_id || 'PRO_LOCKED'}/audit`}
+                        >
+                          🛡️ Audit <span className="text-[8px] bg-red-500 text-white px-1 rounded ml-1">PRO</span>
+                        </button>
+                      )}
                       <button
                         className="card-action-btn remove-btn"
                         onClick={() => handleRemove(item.opportunity_id)}

@@ -27,5 +27,25 @@ def get_db():
 
 
 def init_db():
-    """Initialize database tables."""
+    """Initialize database tables and seed initial data."""
+    # Import all models here to ensure they are registered with Base metadata
+    from models.user import User, Profile, ContentView
+    from models.opportunity import Opportunity
+    from models.tracking import TrackedOpportunity, ParticipationHistory
+    from models.reminder import Reminder
+    from models.gamification import UserXP, XPTransaction, Achievement, UserAchievement
+    from models.team import Team, TeamMember, TeamRequest
+    from models.intelligence import HistoricalProject, ScoutAnalysis, SquadBlueprint, PitchBlueprint, AuditReport
+    
     Base.metadata.create_all(bind=engine)
+    
+    # Auto-seed achievements
+    from sqlalchemy.orm import Session
+    from services.gamification_service import GamificationService
+    
+    db = Session(bind=engine)
+    try:
+        service = GamificationService(db)
+        service.seed_achievements()
+    finally:
+        db.close()

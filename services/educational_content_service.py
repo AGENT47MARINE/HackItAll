@@ -154,6 +154,8 @@ class EducationalContentService:
     
     def mark_content_viewed(self, user_id: str, content_id: str) -> ContentView:
         """Mark content as viewed by user."""
+        from services.gamification_service import GamificationService
+        
         # Check if already viewed
         existing = self.db.query(ContentView).filter(
             ContentView.user_id == user_id,
@@ -170,6 +172,11 @@ class EducationalContentService:
             viewed_at=datetime.utcnow()
         )
         self.db.add(content_view)
+        
+        # AWARD XP: 5 XP for viewing educational content
+        gamification = GamificationService(self.db)
+        gamification.award_xp(user_id, "view_content", reference_id=content_id)
+        
         self.db.commit()
         self.db.refresh(content_view)
         return content_view

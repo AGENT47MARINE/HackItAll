@@ -1,3 +1,12 @@
+import sys
+try:
+    import pydantic
+    print(f"DEBUG TEST: pydantic file = {pydantic.__file__}")
+    print(f"DEBUG TEST: pydantic version = {pydantic.__version__}")
+except ImportError as e:
+    print(f"DEBUG TEST: pydantic import failed: {e}")
+print(f"DEBUG TEST: sys.path = {sys.path}")
+
 import pytest
 from sqlalchemy import create_engine, StaticPool
 from sqlalchemy.orm import sessionmaker

@@ -1,0 +1,97 @@
+═══════════════════════════════════════════════════════════════
+  HOW TO RUN THE APP IN ANDROID STUDIO - STEP BY STEP
+═══════════════════════════════════════════════════════════════
+
+CURRENT STATUS:
+✓ Android Studio is OPEN (Process ID: 33452)
+✓ Emulator is RUNNING (emulator-5554)
+✓ Project loaded at: C:\Users\yagye\OneDrive\Desktop\HackItAll\mobile\android
+
+═══════════════════════════════════════════════════════════════
+
+OPTION 1: RUN FROM ANDROID STUDIO (RECOMMENDED)
+───────────────────────────────────────────────────────────────
+
+1. Look at the TOP TOOLBAR in Android Studio window
+
+2. You'll see these elements from left to right:
+   [app ▼] [Pixel_5 ▼] [▶️ Run] [🐛 Debug] [⏹️ Stop]
+
+3. Make sure:
+   - First dropdown shows: "app"
+   - Second dropdown shows: "Pixel_5" or "emulator-5554"
+
+4. Click the GREEN PLAY BUTTON (▶️)
+
+5. Android Studio will:
+   - Sync Gradle (if needed)
+   - Build the app
+   - Install on emulator
+   - Launch automatically
+
+6. WAIT 3-5 minutes for first build
+
+7. Watch the "Build" tab at bottom for progress
+
+═══════════════════════════════════════════════════════════════
+
+OPTION 2: BUILD FROM ANDROID STUDIO TERMINAL
+───────────────────────────────────────────────────────────────
+
+1. In Android Studio, click "Terminal" tab at bottom
+   (or press Alt+F12)
+
+2. Type this command and press Enter:
+   .\build-and-run.bat
+
+3. Wait for build to complete
+
+═══════════════════════════════════════════════════════════════
+
+IF YOU GET ERRORS:
+───────────────────────────────────────────────────────────────
+
+ERROR: "Gradle sync failed" or "Kotlin compilation error"
+FIX:
+  1. File → Settings (Ctrl+Alt+S)
+  2. Build, Execution, Deployment → Build Tools → Gradle
+  3. Set "Gradle JDK" to: Java 17 (Microsoft OpenJDK 17.0.18)
+  4. Click Apply → OK
+  5. File → Invalidate Caches → Invalidate and Restart
+  6. After restart: Build → Clean Project
+  7. Then: Build → Rebuild Project
+  8. Try running again
+
+ERROR: "No connected devices"
+FIX:
+  - Your emulator is already running on emulator-5554
+  - Click the device dropdown and select it
+  - Or restart emulator: Tools → Device Manager → Play button
+
+═══════════════════════════════════════════════════════════════
+
+WHAT YOU'LL SEE:
+───────────────────────────────────────────────────────────────
+
+NEW WELCOME SCREEN:
+- Dark cyberpunk background
+- "HACKITALL" logo at top
+- "Discover Your Next Opportunity" title
+- Stats cards: 10K+ Opportunities, 50K+ Students, 85% Success
+- Gradient "Get Started" button (cyan to purple)
+- "Login" button
+- "Browse Without Account →" link
+
+THEME:
+- Background: Very dark (#050508)
+- Accents: Bright cyan (#00f0ff) and purple (#7b61ff)
+- Buttons: Gradient effects
+- Cards: Glass-morphism (semi-transparent with blur)
+
+═══════════════════════════════════════════════════════════════
+
+READY TO GO!
+
+Just click the green Run button (▶️) in Android Studio!
+
+═══════════════════════════════════════════════════════════════

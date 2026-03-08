@@ -15,30 +15,21 @@ class RecommendationEngine:
 
         Args:
             db_session: SQLAlchemy database session
-            cache_client: (Deprecated) Redis client for caching. We now use zero-cost local file caching.
+            cache_client: Optional Redis client for caching
         """
         self.db = db_session
         self.cache_ttl = 3600  # 1 hour TTL in seconds
-        self.cache_file = ".recommendation_cache.json"
-
-    def _read_cache(self) -> Dict[str, Any]:
-        """Read the local JSON cache file."""
-        import os
-        if os.path.exists(self.cache_file):
-            try:
-                with open(self.cache_file, "r") as f:
-                    return json.load(f)
-            except Exception:
-                return {}
-        return {}
-
-    def _write_cache(self, data: Dict[str, Any]):
-        """Write to the local JSON cache file."""
+        
+        # Redis setup
+        import redis
+        from config import config
         try:
-            with open(self.cache_file, "w") as f:
-                json.dump(data, f)
-        except Exception:
-            pass
+            self.redis_client = cache_client or redis.from_url(config.REDIS_URL, decode_responses=True)
+            # Test connection
+            self.redis_client.ping()
+        except Exception as e:
+            print(f"Warning: Redis connection failed, falling back to no cache: {e}")
+            self.redis_client = None
 
     def generate_recommendations(self, user_id: str, limit: int = 10) -> List[Tuple[Opportunity, float]]:
         """Generate personalized recommendations for a user.
@@ -54,27 +45,23 @@ class RecommendationEngine:
         Returns:
             List of tuples containing (Opportunity, score) sorted by score descending
         """
-        import time
-        
-        # Check local file cache first
+        # Check Redis cache first
         cache_key = f"rec_{user_id}_{limit}"
-        cache_data = self._read_cache()
         
-        if cache_key in cache_data:
-            entry = cache_data[cache_key]
-            # Check TTL
-            if time.time() - entry.get('timestamp', 0) < self.cache_ttl:
-                # Cache hit! Reconstruct the Opportunity objects from IDs
-                try:
+        if self.redis_client:
+            try:
+                cached_data_str = self.redis_client.get(cache_key)
+                if cached_data_str:
+                    cached_data = json.loads(cached_data_str)
                     result = []
-                    for item in entry.get('results', []):
+                    for item in cached_data:
                         opp = self.db.query(Opportunity).filter(Opportunity.id == item['id']).first()
                         if opp:
                             result.append((opp, item['score']))
                     if result:
                         return result
-                except Exception:
-                    pass # Fall through to recalculate
+            except Exception as e:
+                print(f"Warning: Redis read failed: {e}")
 
         # Get user profile
         from models.user import Profile
@@ -102,18 +89,18 @@ class RecommendationEngine:
         # Limit results
         result = scored_opportunities[:limit]
 
-        # Cache the result to the local file
-        try:
-            # We only cache the IDs and scores, not the full SQLAlchemy objects
-            serialized_results = [{'id': opp.id, 'score': score} for opp, score in result]
-            cache_data[cache_key] = {
-                'timestamp': time.time(),
-                'results': serialized_results
-            }
-            self._write_cache(cache_data)
-        except Exception as e:
-            # If cache fails, continue without it
-            print(f"Warning: Failed to write to local cache: {e}")
+        # Cache the result to Redis
+        if self.redis_client:
+            try:
+                # We only cache the IDs and scores, not the full SQLAlchemy objects
+                serialized_results = [{'id': opp.id, 'score': score} for opp, score in result]
+                self.redis_client.setex(
+                    cache_key,
+                    self.cache_ttl,
+                    json.dumps(serialized_results)
+                )
+            except Exception as e:
+                print(f"Warning: Failed to write to Redis cache: {e}")
 
         return result
 
@@ -129,7 +116,7 @@ class RecommendationEngine:
         # This will be implemented when ParticipationHistory model is created
         # For now, return empty list
         try:
-            from models.participation import ParticipationHistory
+            from models.tracking import ParticipationHistory
             history_entries = self.db.query(ParticipationHistory).filter(
                 ParticipationHistory.user_id == user_id
             ).all()

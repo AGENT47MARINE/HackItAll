@@ -208,7 +208,9 @@ class NotificationService:
         
         # Send email if enabled
         if profile.notification_email:
-            email_sent = self._send_email_notification(user, opportunity, reminder_type)
+            # Check for low-bandwidth mode
+            is_low_bandwidth = getattr(profile, 'low_bandwidth_mode', False)
+            email_sent = self._send_email_notification(user, opportunity, reminder_type, is_low_bandwidth)
             success = success or email_sent
         
         # Send SMS if enabled
@@ -252,19 +254,25 @@ class NotificationService:
         self,
         user: User,
         opportunity: Opportunity,
-        reminder_type: str
+        reminder_type: str,
+        is_low_bandwidth: bool = False
     ) -> bool:
-        """Send email notification.
+        """Send email notification with adaptive fallback.
         
         Args:
             user: User object
             opportunity: Opportunity object
             reminder_type: Type of reminder
+            is_low_bandwidth: Whether to send plain-text only
             
         Returns:
             True if sent successfully
         """
-        subject, body = self.format_email_message(opportunity, reminder_type)
+        subject, body = self.format_email_message(opportunity, reminder_type, is_low_bandwidth)
+        
+        # Log delivery mode
+        mode = "LITE-TEXT" if is_low_bandwidth else "HTML/RICH"
+        print(f"[EMAIL] Mode: {mode} | To: {user.email}")
         
         # TODO: Implement actual email sending using SMTP or email service
         # For now, just log the email
@@ -310,13 +318,15 @@ class NotificationService:
     def format_email_message(
         self,
         opportunity: Opportunity,
-        reminder_type: str
+        reminder_type: str,
+        is_low_bandwidth: bool = False
     ) -> tuple[str, str]:
         """Format email notification message.
         
         Args:
             opportunity: Opportunity object
             reminder_type: Type of reminder
+            is_low_bandwidth: If True, returns ultra-minimal plain text
             
         Returns:
             Tuple of (subject, body)
@@ -325,16 +335,26 @@ class NotificationService:
             days_until = (opportunity.deadline - datetime.utcnow()).days
             
             if days_until <= 1:
-                subject = f"⏰ Deadline Tomorrow: {opportunity.title}"
+                subject = f"⏰ DEADLINE TOMORROW: {opportunity.title}"
                 urgency = "tomorrow"
             elif days_until <= 7:
-                subject = f"📅 Deadline in {days_until} days: {opportunity.title}"
+                subject = f"📅 {days_until} days left: {opportunity.title}"
                 urgency = f"in {days_until} days"
             else:
-                subject = f"📅 Upcoming Deadline: {opportunity.title}"
+                subject = f"📅 Upcoming: {opportunity.title}"
                 urgency = f"on {opportunity.deadline.strftime('%B %d, %Y')}"
             
-            body = f"""
+            if is_low_bandwidth:
+                # Minimal plain text for poor connections
+                body = (
+                    f"Reminder: {opportunity.title} is due {urgency}.\n\n"
+                    f"Deadline: {opportunity.deadline.strftime('%m/%d/%Y %I:%M%p')}\n"
+                    f"Apply: {opportunity.application_link}\n\n"
+                    f"---\n"
+                    f"Sent via HackItAll Lite"
+                ).strip()
+            else:
+                body = f"""
 Hello!
 
 This is a reminder that the deadline for "{opportunity.title}" is {urgency}.
@@ -352,7 +372,7 @@ Don't miss this opportunity! Apply now.
 
 Best regards,
 Opportunity Access Platform
-            """.strip()
+                """.strip()
         
         else:
             subject = f"Update: {opportunity.title}"

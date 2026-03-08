@@ -5,6 +5,7 @@ import { opportunitiesAPI, trackingAPI } from '../services/api';
 import GridBackground from '../components/GridBackground';
 import PixelLogo from '../components/PixelLogo';
 import TeamSection from '../components/TeamSection';
+import IntelligenceTab from '../components/IntelligenceTab';
 import './Pages.css';
 
 export default function OpportunityDetail() {
@@ -158,6 +159,16 @@ export default function OpportunityDetail() {
 
         {/* Content Grid */}
         <div className="detail-grid">
+          {/* Strategic AI Alpha (Only for Hackathons) */}
+          {opportunity.type === 'hackathon' && (
+            <div className="md:col-span-2">
+              <h2 className="detail-card-title flex items-center gap-2">
+                <span className="text-xl">🛡️</span> COMPETITIVE AI SCOUT (WINNER ALPHA)
+              </h2>
+              <IntelligenceTab opportunityId={opportunity.id} />
+              <div className="mb-8"></div>
+            </div>
+          )}
 
           {/* AI Fit Analysis */}
           {isAuthenticated && (analyzing || fitAnalysis) && (

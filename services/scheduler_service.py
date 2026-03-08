@@ -182,3 +182,35 @@ class SchedulerService:
             db.rollback()
         finally:
             db.close()
+
+    @staticmethod
+    def run_daily_mega_scrape():
+        """
+        Trigger the 15-site Mega Scraper to fetch new opportunities.
+        Should run daily at 8:00 AM.
+        """
+        logger.info("Starting scheduled daily mega scrape at 8 AM...")
+        try:
+            from scripts.run_mega_scrape import run_mega_scrape
+            run_mega_scrape()
+            logger.info("Scheduled mega scrape completed successfully")
+            SchedulerService.update_search_index()
+        except Exception as e:
+            logger.error(f"Error in scheduled mega scrape: {str(e)}")
+
+    @staticmethod
+    def update_search_index():
+        """
+        Refresh the semantic search vector index.
+        Should run after any large data ingestion.
+        """
+        db = SessionLocal()
+        try:
+            from services.search_service import SearchService
+            search_service = SearchService(db)
+            search_service.index_opportunities()
+            logger.info("Search index updated successfully")
+        except Exception as e:
+            logger.error(f"Failed to update search index: {e}")
+        finally:
+            db.close()

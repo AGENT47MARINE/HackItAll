@@ -39,6 +39,9 @@ export default function Layout() {
         <div className="nav-container">
           <Link to="/" className="nav-brand">
             <PixelLogo />
+            {localStorage.getItem('liteMode') === 'true' && (
+              <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded font-black ml-2 tracking-tighter">LITE</span>
+            )}
           </Link>
           <div className="nav-links">
             <Link to="/discover" className={`nav-link ${isActive('/discover')}`}>

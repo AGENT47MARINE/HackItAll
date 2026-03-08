@@ -76,7 +76,9 @@ class OpportunityService:
                           application_link: str,
                           tags: Optional[List[str]] = None,
                           required_skills: Optional[List[str]] = None,
-                          eligibility: Optional[str] = None) -> Dict[str, Any]:
+                          eligibility: Optional[str] = None,
+                          timeline: Optional[List[dict]] = None,
+                          prizes: Optional[List[dict]] = None) -> Dict[str, Any]:
         """Create a new opportunity.
         
         Args:
@@ -100,6 +102,10 @@ class OpportunityService:
             tags = []
         if required_skills is None:
             required_skills = []
+        if timeline is None:
+            timeline = []
+        if prizes is None:
+            prizes = []
         
         # Validate all required fields
         self._validate_opportunity_data(
@@ -120,6 +126,8 @@ class OpportunityService:
             tags=json.dumps(tags),
             required_skills=json.dumps(required_skills),
             eligibility=eligibility,
+            timeline=json.dumps(timeline),
+            prizes=json.dumps(prizes),
             status="active"
         )
         
@@ -157,7 +165,9 @@ class OpportunityService:
                           application_link: Optional[str] = None,
                           tags: Optional[List[str]] = None,
                           required_skills: Optional[List[str]] = None,
-                          eligibility: Optional[str] = None) -> Optional[Dict[str, Any]]:
+                          eligibility: Optional[str] = None,
+                          timeline: Optional[List[dict]] = None,
+                          prizes: Optional[List[dict]] = None) -> Optional[Dict[str, Any]]:
         """Update an opportunity.
         
         Args:
@@ -204,7 +214,7 @@ class OpportunityService:
             opportunity.type = opportunity_type
         
         if deadline is not None:
-            opportunity.deadline = deadline
+            opportunity.deadline = deadline.isoformat() if isinstance(deadline, datetime) else str(deadline)
         
         if application_link is not None:
             opportunity.application_link = application_link
@@ -218,7 +228,13 @@ class OpportunityService:
         if eligibility is not None:
             opportunity.eligibility = eligibility
         
-        opportunity.updated_at = datetime.utcnow()
+        if timeline is not None:
+            opportunity.timeline = json.dumps(timeline)
+        
+        if prizes is not None:
+            opportunity.prizes = json.dumps(prizes)
+        
+        opportunity.updated_at = datetime.now().isoformat()
         
         try:
             self.db.commit()
@@ -283,19 +299,25 @@ class OpportunityService:
         return [self._format_opportunity_response(opp) for opp in opportunities]
         
     def get_trending(self, limit: int = 10) -> List[Dict[str, Any]]:
-        """Get trending opportunities based on tracked count.
+        """Get trending opportunities based on weighted activity score.
+        
+        Algorithm: (tracked_count * 10) + (participant_count * 30) + (source_registration_count / 20)
+        This combines local engagement with global popularity from source sites.
         
         Args:
             limit: Maximum number of opportunities to return
             
         Returns:
-            List of dictionaries containing opportunity data sorted by tracked count
+            List of dictionaries containing opportunity data sorted by trending score
         """
+        # Calculate active trend score in the query for sorting
         opportunities = self.db.query(Opportunity).filter(
-            Opportunity.status == "active",
-            Opportunity.tracked_count > 0
+            Opportunity.status == "active"
         ).order_by(
-            Opportunity.tracked_count.desc()
+            (Opportunity.tracked_count * 10 + 
+             Opportunity.participant_count * 30 + 
+             Opportunity.source_registration_count / 20).desc(),
+            Opportunity.created_at.desc()
         ).limit(limit).all()
         
         return [self._format_opportunity_response(opp) for opp in opportunities]
@@ -337,8 +359,15 @@ class OpportunityService:
         Returns:
             Dictionary containing formatted opportunity data
         """
-        # Get tracked count if available
+        # Get counts if available
         tracked_count = getattr(opportunity, 'tracked_count', 0)
+        participant_count = getattr(opportunity, 'participant_count', 0)
+        source_registration_count = getattr(opportunity, 'source_registration_count', 0)
         
         # Use centralized formatter
-        return ResponseFormatter.format_opportunity_response(opportunity, tracked_count)
+        return ResponseFormatter.format_opportunity_response(
+            opportunity, 
+            tracked_count=tracked_count, 
+            participant_count=participant_count,
+            source_registration_count=source_registration_count
+        )

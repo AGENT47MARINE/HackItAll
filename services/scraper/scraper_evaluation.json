@@ -1,0 +1,110 @@
+{
+  "total_runs": 23,
+  "spiders": {
+    "Devfolio": {
+      "success_count": 2,
+      "fail_count": 1,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:28:40.482480",
+      "last_error": "(psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint \"opportunities_source_url_key\"\nDETAIL:  Key (source_url)=(https://devfolio.com/p/BaseBatches-003-StartupTrack-987654) already exists.\n\n[SQL: INSERT INTO opportunities (id, title, description, type, deadline, application_link, image_url, tags, required_skills, eligibility, location, location_type, source_url, status, tracked_count, participant_count, source_registration_count, created_at,  ... 11786 characters truncated ... (participant_count__30)s, %(source_registration_count__30)s, %(created_at__30)s, %(updated_at__30)s)]\n[parameters: {'tracked_count__0': 0, 'location__0': 'India', 'title__0': 'Base Batches 003: Student Track', 'deadline__0': datetime.datetime(2026, 4, 6, 17, 58, 40, 331645), 'source_url__0': 'https://devfolio.com/p/BaseBatches-003-StudentTrack-678454', 'participant_count__0': 0, 'required_skills__0': '[]', 'image_url__0': 'https://devfolio.co/static/og-image-3.png', 'tags__0': '[\"AI\", \"Web3\"]', 'updated_at__0': datetime.datetime(2026, 3, 7, 17, 58, 40, 332062), 'status__0': 'active', 'application_link__0': 'https://devfolio.com/p/BaseBatches-003-StudentTrack-678454', 'source_registration_count__0': 0, 'id__0': 'c8189cf9-c11d-43e3-ab4f-36212b55112e', 'type__0': 'hackathon', 'description__0': 'No Restrictions', 'location_type__0': 'Online', 'created_at__0': datetime.datetime(2026, 3, 7, 17, 58, 40, 332042), 'eligibility__0': 'Open to all', 'tracked_count__1': 0, 'location__1': 'India', 'title__1': 'Base Batches 003: Robotics Track', 'deadline__1': datetime.datetime(2026, 4, 6, 17, 58, 40, 335964), 'source_url__1': 'https://devfolio.com/p/BaseBatches-003-RoboticsTrack-876543', 'participant_count__1': 0, 'required_skills__1': '[]', 'image_url__1': 'https://devfolio.co/static/og-image-3.png', 'tags__1': '[\"AI\", \"Robotics\"]', 'updated_at__1': datetime.datetime(2026, 3, 7, 17, 58, 40, 336226), 'status__1': 'active', 'application_link__1': 'https://devfolio.com/p/BaseBatches-003-RoboticsTrack-876543', 'source_registration_count__1': 0, 'id__1': '7183f3af-9f4e-420a-85c1-bcfc26662a6e', 'type__1': 'hackathon', 'description__1': 'No Restrictions', 'location_type__1': 'Online', 'created_at__1': datetime.datetime(2026, 3, 7, 17, 58, 40, 336207), 'eligibility__1': 'Open to all', 'tracked_count__2': 0, 'location__2': 'India', 'title__2': 'Base Batches 003: Startup Track', 'deadline__2': datetime.datetime(2026, 4, 6, 17, 58, 40, 338386), 'source_url__2': 'https://devfolio.com/p/BaseBatches-003-StartupTrack-987654', 'participant_count__2': 0, 'required_skills__2': '[]', 'image_url__2': 'https://devfolio.co/static/og-image-3.png', 'tags__2': '[\"AI\"]', 'updated_at__2': datetime.datetime(2026, 3, 7, 17, 58, 40, 338539), 'status__2': 'active', 'application_link__2': 'https://devfolio.com/p/BaseBatches-003-StartupTrack-987654' ... 489 parameters truncated ... 'image_url__28': 'https://devfolio.co/static/og-image-3.png', 'tags__28': '[\"No Restrictions\"]', 'updated_at__28': datetime.datetime(2026, 3, 7, 17, 58, 40, 413167), 'status__28': 'active', 'application_link__28': 'https://ghr.events/', 'source_registration_count__28': 0, 'id__28': 'bb5b37d9-a4f7-4bc8-a75d-734f75acd7cb', 'type__28': 'hackathon', 'description__28': 'No Restrictions', 'location_type__28': 'Online', 'created_at__28': datetime.datetime(2026, 3, 7, 17, 58, 40, 413152), 'eligibility__28': 'Open to all', 'tracked_count__29': 0, 'location__29': 'India', 'title__29': 'Diversion 2K26', 'deadline__29': datetime.datetime(2026, 4, 6, 17, 58, 40, 415695), 'source_url__29': 'https://diversion.events/', 'participant_count__29': 0, 'required_skills__29': '[]', 'image_url__29': 'https://devfolio.co/static/og-image-3.png', 'tags__29': '[\"No Restrictions\"]', 'updated_at__29': datetime.datetime(2026, 3, 7, 17, 58, 40, 415840), 'status__29': 'active', 'application_link__29': 'https://diversion.events/', 'source_registration_count__29': 0, 'id__29': '99eec4eb-ab55-452e-bcad-1ce0a9bef5c6', 'type__29': 'hackathon', 'description__29': 'No Restrictions', 'location_type__29': 'Online', 'created_at__29': datetime.datetime(2026, 3, 7, 17, 58, 40, 415831), 'eligibility__29': 'Open to all', 'tracked_count__30': 0, 'location__30': 'India', 'title__30': 'AfterMath', 'deadline__30': datetime.datetime(2026, 4, 6, 17, 58, 40, 418148), 'source_url__30': 'https://aftermath.events/', 'participant_count__30': 0, 'required_skills__30': '[]', 'image_url__30': 'https://devfolio.co/static/og-image-3.png', 'tags__30': '[\"No Restrictions\"]', 'updated_at__30': datetime.datetime(2026, 3, 7, 17, 58, 40, 418273), 'status__30': 'active', 'application_link__30': 'https://aftermath.events/', 'source_registration_count__30': 0, 'id__30': 'f2cfa797-25d1-47de-b65d-cb8f2c3baad8', 'type__30': 'hackathon', 'description__30': 'No Restrictions', 'location_type__30': 'Online', 'created_at__30': datetime.datetime(2026, 3, 7, 17, 58, 40, 418265), 'eligibility__30': 'Open to all'}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)"
+    },
+    "Unstop": {
+      "success_count": 4,
+      "fail_count": 0,
+      "total_items_scraped": 53,
+      "last_run": "2026-03-07T23:28:50.958190",
+      "last_error": ""
+    },
+    "Devpost": {
+      "success_count": 4,
+      "fail_count": 0,
+      "total_items_scraped": 36,
+      "last_run": "2026-03-07T23:29:34.118954",
+      "last_error": ""
+    },
+    "HackerEarth": {
+      "success_count": 1,
+      "fail_count": 0,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:28:48.606260",
+      "last_error": ""
+    },
+    "TechGig": {
+      "success_count": 1,
+      "fail_count": 0,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:28:56.693705",
+      "last_error": ""
+    },
+    "GeeksForGeeks": {
+      "success_count": 1,
+      "fail_count": 0,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:29:08.290409",
+      "last_error": ""
+    },
+    "SIH (Smart India Hackathon)": {
+      "success_count": 0,
+      "fail_count": 1,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:29:28.035518",
+      "last_error": "Failed to fetch content from https://sih.gov.in/"
+    },
+    "MLH (Major League Hacking)": {
+      "success_count": 1,
+      "fail_count": 0,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:31:22.356609",
+      "last_error": ""
+    },
+    "CodeChef": {
+      "success_count": 1,
+      "fail_count": 0,
+      "total_items_scraped": 30,
+      "last_run": "2026-03-07T23:32:42.796057",
+      "last_error": ""
+    },
+    "LeetCode": {
+      "success_count": 1,
+      "fail_count": 0,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:32:54.735983",
+      "last_error": ""
+    },
+    "Kaggle": {
+      "success_count": 1,
+      "fail_count": 0,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:33:01.921789",
+      "last_error": ""
+    },
+    "Internshala": {
+      "success_count": 1,
+      "fail_count": 0,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:33:08.040668",
+      "last_error": ""
+    },
+    "Microsoft Imagine Cup": {
+      "success_count": 0,
+      "fail_count": 1,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:33:26.559165",
+      "last_error": "Failed to fetch content from https://imaginecup.microsoft.com/"
+    },
+    "Buddy4Study": {
+      "success_count": 0,
+      "fail_count": 1,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:34:01.867605",
+      "last_error": "(psycopg2.errors.StringDataRightTruncation) value too long for type character varying(50)\n\n[SQL: INSERT INTO opportunities (id, title, description, type, deadline, application_link, image_url, tags, required_skills, eligibility, location, location_type, source_url, status, tracked_count, participant_count, source_registration_count, created_at,  ... 4784 characters truncated ... (participant_count__12)s, %(source_registration_count__12)s, %(created_at__12)s, %(updated_at__12)s)]\n[parameters: {'tracked_count__0': 0, 'location__0': 'India', 'title__0': 'Aspire Leaders Program 2026', 'deadline__0': datetime.datetime(2026, 4, 6, 18, 4, 1, 847560), 'source_url__0': 'https://www.buddy4study.com/aspire-leaders-program', 'participant_count__0': 0, 'required_skills__0': '[]', 'image_url__0': 'https://d2w7l1p59qkl0r.cloudfront.net/static/files/linkedinimage.jpg', 'tags__0': '[\"leadership\", \"career development\"]', 'updated_at__0': datetime.datetime(2026, 3, 7, 18, 4, 1, 847666), 'status__0': 'active', 'application_link__0': 'https://www.buddy4study.com/aspire-leaders-program', 'source_registration_count__0': 0, 'id__0': '7cb5b7b5-e959-4d86-a0e0-976f7957c9cb', 'type__0': 'hackathon', 'description__0': 'Free access to training modules, live sessions by Havard faculty', 'location_type__0': 'Online', 'created_at__0': datetime.datetime(2026, 3, 7, 18, 4, 1, 847663), 'eligibility__0': 'First-generation learners', 'tracked_count__1': 0, 'location__1': 'India', 'title__1': 'College Board 90% Fee Waiver Program', 'deadline__1': datetime.datetime(2026, 4, 6, 18, 4, 1, 849148), 'source_url__1': 'https://opportunity.collegeboard.org/scholarships/fee-waiver-program', 'participant_count__1': 0, 'required_skills__1': '[]', 'image_url__1': 'https://d2w7l1p59qkl0r.cloudfront.net/static/files/linkedinimage.jpg', 'tags__1': '[\"college\", \"fee waiver\"]', 'updated_at__1': datetime.datetime(2026, 3, 7, 18, 4, 1, 849215), 'status__1': 'active', 'application_link__1': 'https://opportunity.collegeboard.org/scholarships/fee-waiver-program', 'source_registration_count__1': 0, 'id__1': '4a0f2093-4ea5-45d2-94e0-1cd08f36969e', 'type__1': 'scholarship', 'description__1': 'Tuition fee waiver', 'location_type__1': 'Online', 'created_at__1': datetime.datetime(2026, 3, 7, 18, 4, 1, 849212), 'eligibility__1': 'Class 11 and 12', 'tracked_count__2': 0, 'location__2': 'India', 'title__2': 'nurtr Nurturing Minds with Chess Program (90% Fee Waiver) 2025-26', 'deadline__2': datetime.datetime(2026, 4, 6, 18, 4, 1, 850134), 'source_url__2': 'https://www.buddy4study.com/nurtr-nurturing-minds-with-chess-program', 'participant_count__2': 0, 'required_skills__2': '[]', 'image_url__2': 'https://d2w7l1p59qkl0r.cloudfront.net/static/files/linkedinimage.jpg', 'tags__2': '[\"chess\", \"education\"]', 'updated_at__2': datetime.datetime(2026, 3, 7, 18, 4, 1, 850184), 'status__2': 'active', 'application_link__2': 'https://www.buddy4study.com/nurtr-nurturing-minds-with-chess-program' ... 147 parameters truncated ... 'image_url__10': 'https://d2w7l1p59qkl0r.cloudfront.net/static/files/linkedinimage.jpg', 'tags__10': '[\"graduation\", \"polytechnic\", \"diploma\"]', 'updated_at__10': datetime.datetime(2026, 3, 7, 18, 4, 1, 858681), 'status__10': 'active', 'application_link__10': 'https://www.buddy4study.com/pankh-scholarship-graduation', 'source_registration_count__10': 0, 'id__10': 'f80e1fd0-4364-459b-ba58-49cf68f5f313', 'type__10': 'scholarship', 'description__10': 'Scholarship up to INR 18,000', 'location_type__10': 'Online', 'created_at__10': datetime.datetime(2026, 3, 7, 18, 4, 1, 858678), 'eligibility__10': 'For students pursuing Diploma/Polytechnic or general graduation', 'tracked_count__11': 0, 'location__11': 'India', 'title__11': 'Tata Capital Pankh Scholarship Program for Specialised Discipline programme (2025\u201326)', 'deadline__11': datetime.datetime(2026, 4, 6, 18, 4, 1, 860624), 'source_url__11': 'https://www.buddy4study.com/pankh-scholarship-specialised', 'participant_count__11': 0, 'required_skills__11': '[]', 'image_url__11': 'https://d2w7l1p59qkl0r.cloudfront.net/static/files/linkedinimage.jpg', 'tags__11': '[\"specialized\", \"professional\"]', 'updated_at__11': datetime.datetime(2026, 3, 7, 18, 4, 1, 860727), 'status__11': 'active', 'application_link__11': 'https://www.buddy4study.com/pankh-scholarship-specialised', 'source_registration_count__11': 0, 'id__11': '05125987-f18f-4b2c-92ac-f67f923c03ff', 'type__11': 'scholarship', 'description__11': 'Scholarship up to INR 1,00,000', 'location_type__11': 'Online', 'created_at__11': datetime.datetime(2026, 3, 7, 18, 4, 1, 860724), 'eligibility__11': 'For students pursuing professional courses', 'tracked_count__12': 0, 'location__12': 'India', 'title__12': 'MynVidya: Myntra Cares Scholarship Program For Children of Garment Workers', 'deadline__12': datetime.datetime(2026, 4, 6, 18, 4, 1, 862300), 'source_url__12': 'https://www.myndia.com/scholarship/', 'participant_count__12': 0, 'required_skills__12': '[]', 'image_url__12': 'https://d2w7l1p59qkl0r.cloudfront.net/static/files/linkedinimage.jpg', 'tags__12': '[\"garment workers\", \"education\"]', 'updated_at__12': datetime.datetime(2026, 3, 7, 18, 4, 1, 862379), 'status__12': 'active', 'application_link__12': 'https://www.myndia.com/scholarship/', 'source_registration_count__12': 0, 'id__12': 'f0dcc334-e7ed-487a-b2d9-eb540b93102f', 'type__12': 'scholarship', 'description__12': 'Scholarship of INR 20,000 per year', 'location_type__12': 'Online', 'created_at__12': datetime.datetime(2026, 3, 7, 18, 4, 1, 862375), 'eligibility__12': 'Children of garment workers'}]\n(Background on this error at: https://sqlalche.me/e/20/9h9h)"
+    },
+    "Reliance Foundation": {
+      "success_count": 0,
+      "fail_count": 1,
+      "total_items_scraped": 0,
+      "last_run": "2026-03-07T23:34:20.153559",
+      "last_error": "Failed to fetch content from https://www.reliancefoundation.org/scholarships"
+    }
+  }
+}

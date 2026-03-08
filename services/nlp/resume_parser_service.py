@@ -5,12 +5,12 @@ import json
 from pypdf import PdfReader
 import io
 
-from services.nlp.local_extractor import LocalLLMExtractor
+from services.nlp.extractors import LLMExtractor, LocalLLMExtractor
 
 class ResumeParserService:
     """Service for extracting profile data from resumes."""
 
-    def __init__(self, extractor: Optional[LocalLLMExtractor] = None):
+    def __init__(self, extractor: Optional[LLMExtractor] = None):
         """Initialize the resume parser service.
         
         Args:

@@ -30,6 +30,18 @@ opportunity-access-platform/
 └── requirements.txt      # Python dependencies
 ```
 
+## Universal AI Scraper (Tier-2 Architecture)
+
+The platform features a high-fidelity "Tier-2" scraper designed to extract opportunity data from any website without custom code for each domain.
+
+### Core Principles
+- **Visual-First Rendering**: Uses **Playwright** with Stealth Mode to execute JavaScript, scroll for lazy-loaded content, and see the page exactly as a human would.
+- **Semantic Intelligence**: Instead of fragile CSS selectors, it uses **Ollama** (Local LLM) to understand the page content.
+- **Intelligent Chunking**: Processes large DOMs by stripping "noise" (ads, footers, nav) and segmenting surviving text into semantic blocks for the LLM.
+- **Structured Extraction**: Maps raw website text to a rigorous JSON schema, ensuring all opportunities are captured with high precision (deadlines, prizes, eligibility).
+- **Graceful Fallback**: Automatically switches to stealth mode or standard requests if browser-based fetching is blocked.
+
+
 ## Technology Stack
 
 ### Backend

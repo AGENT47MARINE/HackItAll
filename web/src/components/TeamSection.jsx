@@ -157,7 +157,22 @@ export default function TeamSection({ opportunityId }) {
                                 </button>
                             )}
                             {team.leader_id === userId && (
-                                <span className="team-leader-badge">You are the leader</span>
+                                <div className="team-leader-controls">
+                                    <span className="team-leader-badge">You are the leader</span>
+                                    <button
+                                        className="detail-button save mt-2 w-full text-xs py-2 bg-blue-500/10 border-blue-500/30 flex items-center justify-center gap-2"
+                                        onClick={() => window.location.href = `/teams/${team.id}/blueprint`}
+                                    >
+                                        🚀 VIEW AI BATTLE PLAN
+                                    </button>
+                                    <button
+                                        className="detail-button apply mt-2 w-full text-xs py-2 bg-purple-500/10 border-purple-500/30 flex items-center justify-center gap-2"
+                                        style={{ color: '#a855f7' }}
+                                        onClick={() => window.location.href = `/teams/${team.id}/pitch`}
+                                    >
+                                        🎙️ GO TO PITCH STUDIO
+                                    </button>
+                                </div>
                             )}
                         </div>
                     ))}

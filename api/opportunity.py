@@ -30,6 +30,12 @@ class OpportunityResponse(BaseModel):
     eligibility: Optional[str]
     status: str
     tracked_count: int = 0
+    participant_count: int = 0
+    source_registration_count: int = 0
+    timeline: List[dict] = []
+    prizes: List[dict] = []
+    location: Optional[str] = None
+    location_type: str = "Online"
     created_at: str
     updated_at: str
 
@@ -44,6 +50,8 @@ class CreateOpportunityRequest(BaseModel):
     tags: Optional[List[str]] = Field(default=[], description="List of tags")
     required_skills: Optional[List[str]] = Field(default=[], description="List of required skills")
     eligibility: Optional[str] = Field(default=None, description="Eligibility requirements")
+    timeline: Optional[List[dict]] = Field(default=[], description="Structured timeline events")
+    prizes: Optional[List[dict]] = Field(default=[], description="Prize details")
 
 
 class UpdateOpportunityRequest(BaseModel):
@@ -56,6 +64,8 @@ class UpdateOpportunityRequest(BaseModel):
     tags: Optional[List[str]] = None
     required_skills: Optional[List[str]] = None
     eligibility: Optional[str] = None
+    timeline: Optional[List[dict]] = None
+    prizes: Optional[List[dict]] = None
 
 
 class RecommendationResponse(BaseModel):
@@ -79,6 +89,15 @@ class ProjectIdea(BaseModel):
 class ProjectIdeasResponse(BaseModel):
     """Response model for project ideas."""
     ideas: List[ProjectIdea]
+
+class ScoutAnalysisResponse(BaseModel):
+    """Response model for strategic AI scout analysis."""
+    winning_criteria: Optional[str]
+    suggested_tech_stack: List[str]
+    track_difficulty: Dict[str, str]
+    strategic_advice: Optional[str]
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 # Public Endpoints
@@ -125,6 +144,25 @@ async def search_opportunities(
     )
     
     return [OpportunityResponse(**opp) for opp in opportunities]
+
+
+@router.get("/opportunities/search/semantic", response_model=List[OpportunityResponse])
+async def semantic_search_opportunities(
+    q: str = Query(..., description="Natural language search query"),
+    limit: int = Query(default=10, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """
+    Perform a natural language semantic search for opportunities.
+    Uses vector embeddings to find relevant matches even without keyword overlap.
+    """
+    from services.search_service import SearchService
+    search_service = SearchService(db)
+    
+    results = search_service.search(q, limit=limit)
+    opportunity_service = OpportunityService(db)
+    
+    return [OpportunityResponse(**opportunity_service._format_opportunity_response(opp)) for opp in results]
 
 
 @router.get("/opportunities/trending", response_model=List[OpportunityResponse])
@@ -210,6 +248,11 @@ async def analyze_opportunity_fit(
     engine = RecommendationEngine(db)
     analysis = engine.analyze_skill_gap(profile, opportunity)
     
+    # AWARD XP: 15 XP for using skill gap analysis
+    from services.gamification_service import GamificationService
+    gamification = GamificationService(db)
+    gamification.award_xp(current_user_id, "analyze_fit", reference_id=opportunity_id)
+    
     return SkillGapAnalysisResponse(**analysis)
 
 
@@ -234,6 +277,25 @@ async def get_project_ideas(
     ideas = engine.generate_project_ideas(profile, opportunity)
     
     return {"ideas": ideas}
+
+
+@router.get("/opportunities/{opportunity_id}/scout", response_model=ScoutAnalysisResponse)
+async def get_hackathon_scout(
+    opportunity_id: str,
+    db: Session = Depends(get_db)
+):
+    """Get AI strategic 'Alpha' for a hackathon based on past winners."""
+    from services.competitive_scout_service import CompetitiveScoutService
+    scout_service = CompetitiveScoutService(db)
+    
+    try:
+        analysis = scout_service.analyze_hackathon(opportunity_id)
+        return analysis
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Scout Analysis failed: {str(e)}"
+        )
 @router.get("/recommendations", response_model=List[RecommendationResponse])
 async def get_recommendations(
     limit: int = Query(default=10, ge=1, le=50, description="Maximum number of recommendations"),
@@ -305,8 +367,8 @@ async def scrape_opportunity(
             opportunity_service = OpportunityService(db)
             return opportunity_service._format_opportunity_response(existing)
 
-        # 2. Scrape: Only run Playwright + Ollama if not found
-        extracted_data = dispatcher.execute_scrape(request.url)
+        # 2. Scrape: Force high-fidelity AI scrape for exact detail extraction (Timeline/Prizes)
+        extracted_data = dispatcher.scrape_single_url(request.url)
         
         # Parse the loose date string from AI into a strict datetime
         deadline_dt = datetime.now()
@@ -328,8 +390,15 @@ async def scrape_opportunity(
             tags=extracted_data.get("tags", []),
             required_skills=extracted_data.get("required_skills", []),
             eligibility=extracted_data.get("eligibility"),
-            source_url=request.url # Explicitly set source_url for future checks
+            timeline=extracted_data.get("timeline", []),
+            prizes=extracted_data.get("prizes", []),
+            source_url=request.url
         )
+        
+        # AWARD XP: 20 XP for scraping a new URL
+        from services.gamification_service import GamificationService
+        gamification = GamificationService(db)
+        gamification.award_xp(current_user_id, "scrape", reference_id=request.url)
         
         return opportunity
         
@@ -475,20 +544,20 @@ async def batch_scrape(
     all_scraped = []
     sources_used = []
 
-    # Run Unstop spider
+    # Run Unstop spider (top 30 only to keep storage lean)
     try:
         unstop = UnstopSpider()
-        unstop_results = unstop.scrape(max_results=15)
+        unstop_results = unstop.scrape(max_results=30)
         all_scraped.extend(unstop_results)
         if unstop_results:
             sources_used.append("unstop.com")
     except Exception as e:
         errors.append(f"Unstop spider failed: {str(e)}")
 
-    # Run Devpost spider
+    # Run Devpost spider (top 5 only to keep storage lean)
     try:
         devpost = DevpostSpider()
-        devpost_results = devpost.scrape(max_results=15)
+        devpost_results = devpost.scrape(max_results=5)
         all_scraped.extend(devpost_results)
         if devpost_results:
             sources_used.append("devpost.com")
@@ -528,6 +597,8 @@ async def batch_scrape(
                 eligibility=item.get("eligibility"),
                 location=item.get("location"),
                 location_type=item.get("location_type", "Online"),
+                timeline=json.dumps(item.get("timeline", [])),
+                prizes=json.dumps(item.get("prizes", [])),
                 source_url=source_url,
                 status="active",
             )

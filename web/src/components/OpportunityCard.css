@@ -382,3 +382,31 @@
     transform: translateX(100%);
   }
 }
+
+.lite-card {
+  padding: 12px !important;
+  border-radius: 8px !important;
+  background: #111 !important;
+}
+
+.lite-card .card-image-container {
+  display: none !important;
+}
+
+.lite-card .card-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.8rem !important;
+}
+
+.lite-card .tags-container {
+  display: none !important;
+}
+
+.lite-card .match-score-container {
+  transform: scale(0.8);
+  top: 5px !important;
+  right: 5px !important;
+}
