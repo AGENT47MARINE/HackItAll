@@ -1,8 +1,14 @@
 import sys
 import pydantic
-print(f"DEBUG: sys.path = {sys.path}")
-print(f"DEBUG: pydantic file = {pydantic.__file__}")
-print(f"DEBUG: pydantic version = {pydantic.__version__}")
+
+# Pydantic v2 Compatibility Polyfill for Svix and other libraries
+if not hasattr(pydantic, 'ModelWrapValidatorHandler'):
+    try:
+        from pydantic.functional_validators import ModelWrapValidatorHandler
+        setattr(pydantic, 'ModelWrapValidatorHandler', ModelWrapValidatorHandler)
+    except ImportError:
+        pass
+
 """Main application entry point."""
 from contextlib import asynccontextmanager
 import logging

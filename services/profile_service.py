@@ -62,7 +62,7 @@ class ProfileService:
             raise ValidationError("skills must be a list")
     
     def create_profile(self, user_id: str, email: str, education_level: str,
-                      username: str,
+                      username: Optional[str] = None,
                       interests: Optional[List[str]] = None,
                       skills: Optional[List[str]] = None,
                       phone: Optional[str] = None,
@@ -94,6 +94,8 @@ class ProfileService:
             interests = []
         if skills is None:
             skills = []
+        if username is None:
+            username = email.split('@')[0] if email and '@' in email else user_id
         
         # Validate data
         self._validate_profile_data(

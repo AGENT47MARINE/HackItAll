@@ -1,8 +1,8 @@
 """Opportunity management API endpoints."""
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy.orm import Session
 
 from database import get_db

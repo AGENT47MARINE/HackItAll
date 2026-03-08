@@ -1,5 +1,5 @@
 """Team API endpoints."""
-from typing import List, Optional
+from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict
@@ -95,13 +95,9 @@ class AuditResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class BlueprintResponse(BaseModel):
-    """Response model for team sprint roadmap."""
-    roadmap: List[dict]
-    suggested_skeleton: str
-    role_assignments: Dict[str, str]
 
-    model_config = ConfigDict(from_attributes=True)
+
+# Standard API Endpoints
 
 
 @router.post("/opportunity/{opportunity_id}", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
