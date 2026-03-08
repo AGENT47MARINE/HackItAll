@@ -49,11 +49,8 @@ env/
 .coverage
 htmlcov/
 .hypothesis/
-pytest_prop_err*.txt
-pytest_rec_final_err.txt
-pytest_prop_final_err.txt
-pytest_trace.txt
-rec_pytest.txt
+pytest*.txt
+git_status.txt
 test_err.txt
 test_out.txt
 
