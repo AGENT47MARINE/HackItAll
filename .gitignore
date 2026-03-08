@@ -49,9 +49,25 @@ env/
 .coverage
 htmlcov/
 .hypothesis/
+pytest_prop_err*.txt
+pytest_rec_final_err.txt
+pytest_prop_final_err.txt
+pytest_trace.txt
+rec_pytest.txt
+test_err.txt
+test_out.txt
+
+# Temp/Debug Scripts
+scripts/debug_traceback.py
+scripts/test_*.py
+test_formatters.py
+test_new_features.py
+tmp/
+tmp_test_conn.py
 
 # Logs
 *.log
+backend.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -71,4 +87,8 @@ coverage/
 .eslintcache
 .stylelintcache
 *.tsbuildinfo
+
+# Credentials
 testing_credentials.txt
+.env
+.env.local
