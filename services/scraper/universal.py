@@ -1,25 +1,24 @@
-from services.scraper.base import BaseScraper, OpportunityExtraction
+from services.scraper.base import BaseScraper, BatchOpportunityExtraction
 from services.scraper.playwright_engine import PlaywrightEngine
-from services.nlp.local_extractor import LocalLLMExtractor
+from services.nlp.extractors import LLMExtractor, LocalLLMExtractor
 from services.nlp.chunker import SemanticHTMLChunker
+from services.scraper.profiles import get_hints_for_url
 
 class UniversalAIScraper(BaseScraper):
-    """Tier-2 scraper: Uses Playwright to load any domain, and local Ollama to extract data with intelligent chunking."""
+    """Tier-2 scraper: Uses Playwright to load any domain, and semantic LLMs to extract data."""
     
-    def __init__(self, model_name: str = "gemma3:4b", chunk_size: int = 12000, site_hints: dict = None):
+    def __init__(self, extractor: LLMExtractor = None, chunk_size: int = 12000):
         self.engine = PlaywrightEngine()
-        self.extractor = LocalLLMExtractor(model_name=model_name)
+        self.extractor = extractor or LocalLLMExtractor()
         self.chunker = SemanticHTMLChunker(chunk_size=chunk_size)
-        self.site_hints = site_hints or {}
-        
+    
     def extract(self, url: str) -> list:
         print(f"Running Universal AI Scraper on: {url}")
         
-        # Get hints for this domain if available
-        domain = url.split("//")[-1].split("/")[0]
-        hints = self.site_hints.get(domain, "")
+        # Get hints from refined Site Profiles
+        hints = get_hints_for_url(url)
         if hints:
-            print(f"Applying Site Profile hints for {domain}: {hints}")
+            print(f"Applying Site Profile hints: {hints}")
         
         # 1. Load JS and strip DOM
         clean_text, metadata = self.engine.fetch_clean_content(url)
@@ -37,7 +36,11 @@ class UniversalAIScraper(BaseScraper):
         # 3. Process each chunk
         for i, chunk in enumerate(chunks):
             print(f"Processing chunk {i+1}/{len(chunks)}...")
-            extraction_result = self.extractor.extract(chunk, hints=hints)
+            extraction_result = self.extractor.extract(
+                chunk, 
+                hints=hints, 
+                schema_class=BatchOpportunityExtraction
+            )
             
             if not extraction_result or "opportunities" not in extraction_result:
                 continue

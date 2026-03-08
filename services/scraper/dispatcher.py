@@ -1,14 +1,24 @@
-from services.scraper.universal import UniversalAIScraper
-from services.scraper.devpost_spider import DevpostSpider
-from services.scraper.unstop_spider import UnstopSpider
+from services.nlp.extractors import LocalLLMExtractor, OpenAIExtractor, AnthropicExtractor, AWSBedrockExtractor
+from config import config
 from urllib.parse import urlparse
 
 class ScraperDispatcher:
     """Routes URLs to specialized spiders or the Universal AI Scraper."""
     
-    def __init__(self, ollama_model_name: str = "gemma3:4b"):
-        self.ollama_model_name = ollama_model_name
-        self._universal = UniversalAIScraper(model_name=self.ollama_model_name)
+    def __init__(self, use_cloud: bool = False, provider: str = "local"):
+        self.use_cloud = use_cloud
+        
+        # Determine extractor
+        if provider == "bedrock":
+            self.extractor = AWSBedrockExtractor()
+        elif use_cloud and config.OPENAI_API_KEY:
+            self.extractor = OpenAIExtractor(api_key=config.OPENAI_API_KEY)
+        elif use_cloud and config.ANTHROPIC_API_KEY:
+            self.extractor = AnthropicExtractor(api_key=config.ANTHROPIC_API_KEY)
+        else:
+            self.extractor = LocalLLMExtractor(model_name=config.DEFAULT_SCRAPER_MODEL)
+            
+        self._universal = UniversalAIScraper(extractor=self.extractor)
         self._devpost = DevpostSpider()
         self._unstop = UnstopSpider()
         
@@ -33,11 +43,12 @@ class ScraperDispatcher:
             return self._unstop.scrape(max_results=20, opportunity_type=category_hint)
             
         # Fallback to Universal AI Scraper for unknown domains
-        return self.scrape_single_url(url)
+        # For general scraping, we return the list of items
+        return self._universal.extract(url)
 
     def scrape_single_url(self, url: str) -> dict:
         """Forces the use of Universal AI Scraper for high-fidelity extraction of a single page."""
-        print(f"[Dispatcher] Performing high-fidelity AI scrape on: {url}")
+        print(f"[Dispatcher] Performing AI extraction on: {url}")
         extracted_items = self._universal.extract(url)
             
         if not extracted_items:

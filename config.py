@@ -26,6 +26,11 @@ class Config:
     
     # Application
     DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+    
+    # LLM & AI
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+    DEFAULT_SCRAPER_MODEL = os.getenv("DEFAULT_SCRAPER_MODEL", "gemma3:4b")
 
 
 config = Config()

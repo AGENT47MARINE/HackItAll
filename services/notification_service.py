@@ -1,6 +1,8 @@
-"""Notification service for sending email and SMS notifications."""
 import os
 import time
+import logging
+import smtplib
+from email.message import EmailMessage
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
@@ -418,17 +420,53 @@ Opportunity Access Platform
         return False
     
     def _send_email(self, to: str, subject: str, body: str):
-        """Actual email sending implementation (placeholder).
+        """Actual email sending implementation using SMTP or AWS SES."""
+        # 1. Check for AWS SES Configuration (Preferred for production)
+        use_ses = os.getenv("USE_AWS_SES", "False").lower() == "true"
         
-        TODO: Implement using SMTP or email service (SendGrid, AWS SES, etc.)
-        """
-        # Placeholder - would use SMTP or email service
-        smtp_host = os.getenv("SMTP_HOST")
-        if not smtp_host:
-            raise Exception("SMTP not configured")
-        
-        # Simulate success
-        pass
+        if use_ses:
+            import boto3
+            try:
+                ses_client = boto3.client("ses", region_name=os.getenv("AWS_REGION", "us-east-1"))
+                ses_client.send_email(
+                    Source=os.getenv("SMTP_USER"), # SES Verified Identity
+                    Destination={"ToAddresses": [to]},
+                    Message={
+                        "Subject": {"Data": subject},
+                        "Body": {"Text": {"Data": body}}
+                    }
+                )
+                print(f"Successfully sent email via AWS SES to {to}")
+                return
+            except Exception as e:
+                print(f"AWS SES failed, falling back to SMTP: {e}")
+
+        # 2. Fallback to Standard SMTP
+        smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        smtp_user = os.getenv("SMTP_USER")
+        smtp_password = os.getenv("SMTP_PASSWORD")
+
+        if not smtp_user or not smtp_password:
+            # Fallback to logging if not configured
+            print(f"[PREVIEW ONLY] Email to {to} would be sent if SMTP/SES was configured.")
+            return
+
+        msg = EmailMessage()
+        msg.set_content(body)
+        msg['Subject'] = subject
+        msg['From'] = smtp_user
+        msg['To'] = to
+
+        try:
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.starttls()  # Secure the connection
+                server.login(smtp_user, smtp_password)
+                server.send_message(msg)
+            print(f"Successfully sent email to {to}")
+        except Exception as e:
+            print(f"Failed to send email to {to}: {str(e)}")
+            raise
     
     def _send_sms(self, to: str, message: str):
         """Actual SMS sending implementation (placeholder).

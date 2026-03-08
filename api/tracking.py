@@ -118,7 +118,7 @@ async def scrape_and_track_opportunity(
     4. Track it for the user
     """
     from models.opportunity import Opportunity
-    from services.scraper_service import ScraperService
+    from services.scraper.dispatcher import ScraperDispatcher
     
     # 1. Check if URL already exists
     # We do a 'like' search to handle minor http vs https or trailing slash differences
@@ -130,20 +130,26 @@ async def scrape_and_track_opportunity(
     if existing_opp:
         opportunity_to_track = existing_opp
     else:
-        # 2. Doesn't exist, we must scrape
-        scraper = ScraperService()
-        scraped_data = scraper.scrape_url(request.url)
+        # 2. Doesn't exist, we must scrape using AI Dispatcher
+        dispatcher = ScraperDispatcher(use_cloud=False) # Default to local for user-triggered scrapes
+        try:
+            scraped_data = dispatcher.scrape_single_url(request.url)
+        except Exception as e:
+            # Fallback to basic ScraperService if AI fails
+            from services.scraper_service import ScraperService
+            print(f"AI Scraper failed, falling back to basic: {e}")
+            scraped_data = ScraperService().scrape_url(request.url)
         
         # 3. Create new Opportunity in Database
         opportunity_to_track = Opportunity(
-            title=scraped_data["title"],
-            description=scraped_data["description"],
-            type=scraped_data["type"],
+            title=scraped_data.get("title", "Unknown"),
+            description=scraped_data.get("description", ""),
+            type=scraped_data.get("type", "hackathon"),
             image_url=scraped_data.get("image_url"),
-            deadline=datetime.utcnow(), # Temporary default, user can edit later
-            application_link=scraped_data["application_link"],
-            tags=scraped_data["tags"],
-            required_skills=scraped_data["required_skills"],
+            deadline=datetime.utcnow(), # Temporary default
+            application_link=scraped_data.get("application_link", request.url),
+            tags=scraped_data.get("tags", "[]"),
+            required_skills=scraped_data.get("required_skills", "[]"),
             status="active"
         )
         db.add(opportunity_to_track)
