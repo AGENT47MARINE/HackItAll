@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
+import api from '../services/api';
 import PixelIcon from '../components/PixelIcon';
 import './Leagues.css';
 
@@ -30,12 +30,9 @@ export default function Leagues() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem('clerk-db-token');
-                const headers = { Authorization: `Bearer ${token}` };
-
                 const [statsRes, leagueRes] = await Promise.all([
-                    axios.get('http://localhost:8000/api/gamification/stats', { headers }),
-                    axios.get('http://localhost:8000/api/gamification/leaderboard', { headers }),
+                    api.get('/gamification/stats'),
+                    api.get('/gamification/leaderboard'),
                 ]);
 
                 setStats(statsRes.data);

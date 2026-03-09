@@ -16,7 +16,9 @@ class Reminder(Base):
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     opportunity_id = Column(String, ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=False)
     scheduled_time = Column(DateTime, nullable=False)
+    type = Column(String(50), default="deadline", nullable=False) # deadline, submission_3h, submission_24h, hackathon_1d
     sent = Column(Boolean, default=False, nullable=False)
+    is_read = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships
@@ -25,8 +27,8 @@ class Reminder(Base):
     
     # Indexes for efficient queries
     __table_args__ = (
-        Index('idx_reminders_scheduled', 'scheduled_time', 'sent'),
-        Index('idx_reminders_user', 'user_id'),
+        Index('idx_reminders_scheduled_type', 'scheduled_time', 'sent', 'type'),
+        Index('idx_reminders_user_unread', 'user_id', 'is_read'),
     )
     
     def __repr__(self):

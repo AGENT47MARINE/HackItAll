@@ -294,7 +294,7 @@ class OpportunityService:
         if eligibility:
             query = query.filter(Opportunity.eligibility == eligibility)
         
-        opportunities = query.all()
+        opportunities = query.order_by(Opportunity.deadline.asc()).all()
         
         return [self._format_opportunity_response(opp) for opp in opportunities]
         

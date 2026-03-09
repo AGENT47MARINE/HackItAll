@@ -30,23 +30,16 @@ class NotificationService:
         self,
         user_id: str,
         opportunity_id: str,
-        scheduled_time: datetime
+        scheduled_time: datetime,
+        type: str = "deadline"
     ) -> Dict[str, Any]:
-        """Schedule a deadline reminder for a user.
-        
-        Args:
-            user_id: User ID
-            opportunity_id: Opportunity ID
-            scheduled_time: When to send the reminder
-            
-        Returns:
-            Dictionary containing reminder data
-        """
+        """Schedule a specific alert reminder for a user."""
         # Check if reminder already exists
         existing = self.db.query(Reminder).filter(
             Reminder.user_id == user_id,
             Reminder.opportunity_id == opportunity_id,
-            Reminder.scheduled_time == scheduled_time
+            Reminder.scheduled_time == scheduled_time,
+            Reminder.type == type
         ).first()
         
         if existing:
@@ -57,6 +50,7 @@ class NotificationService:
             user_id=user_id,
             opportunity_id=opportunity_id,
             scheduled_time=scheduled_time,
+            type=type,
             sent=False
         )
         
@@ -72,30 +66,29 @@ class NotificationService:
         opportunity_id: str,
         deadline: datetime
     ) -> List[Dict[str, Any]]:
-        """Schedule both 7-day and 24-hour reminders for an opportunity.
-        
-        Args:
-            user_id: User ID
-            opportunity_id: Opportunity ID
-            deadline: Opportunity deadline
-            
-        Returns:
-            List of created reminders
-        """
+        """Schedule the full cascade of hackathon alerts."""
         reminders = []
         now = datetime.utcnow()
         
-        # Schedule 7-day reminder (if deadline is more than 7 days away)
-        seven_days_before = deadline - timedelta(days=7)
-        if seven_days_before > now:
-            reminder_7d = self.schedule_reminder(user_id, opportunity_id, seven_days_before)
-            reminders.append(reminder_7d)
-        
-        # Schedule 24-hour reminder (if deadline is more than 24 hours away)
+        # 1. Submission Deadline: 24-hour reminder
         one_day_before = deadline - timedelta(hours=24)
         if one_day_before > now:
-            reminder_24h = self.schedule_reminder(user_id, opportunity_id, one_day_before)
+            reminder_24h = self.schedule_reminder(user_id, opportunity_id, one_day_before, "submission_24h")
             reminders.append(reminder_24h)
+        
+        # 2. Submission Deadline: 3-hour URGENT reminder
+        three_hours_before = deadline - timedelta(hours=3)
+        if three_hours_before > now:
+            reminder_3h = self.schedule_reminder(user_id, opportunity_id, three_hours_before, "submission_3h")
+            reminders.append(reminder_3h)
+            
+        # 3. Hackathon Start/General: 1-day before hackathon reminder
+        # Note: If we don't have a start_date, we use deadline - 2 days as a heuristic
+        # If deadline is more than 3 days away, schedule a "upcoming" reminder
+        two_days_before = deadline - timedelta(days=2)
+        if two_days_before > now:
+            reminder_1d = self.schedule_reminder(user_id, opportunity_id, two_days_before, "hackathon_1d")
+            reminders.append(reminder_1d)
         
         return reminders
     
@@ -331,30 +324,31 @@ class NotificationService:
         Returns:
             Tuple of (subject, body)
         """
-        if reminder_type == "deadline":
+        if reminder_type == "submission_3h":
+            subject = f"🚨 URGENT: 3 HOURS LEFT for {opportunity.title}"
+            urgency = "in exactly 3 hours! Please complete your submission."
+        elif reminder_type == "submission_24h":
+            subject = f"⏰ 24 Hours to Go: {opportunity.title}"
+            urgency = "tomorrow. It's time to finalize your project."
+        elif reminder_type == "hackathon_1d":
+            subject = f"🚀 Hackathon Tomorrow: {opportunity.title}"
+            urgency = "starting within 24 hours. Get your team ready!"
+        else:
             days_until = (opportunity.deadline - datetime.utcnow()).days
+            subject = f"📅 Upcoming: {opportunity.title}"
+            urgency = f"on {opportunity.deadline.strftime('%B %d, %Y')}"
             
-            if days_until <= 1:
-                subject = f"⏰ DEADLINE TOMORROW: {opportunity.title}"
-                urgency = "tomorrow"
-            elif days_until <= 7:
-                subject = f"📅 {days_until} days left: {opportunity.title}"
-                urgency = f"in {days_until} days"
-            else:
-                subject = f"📅 Upcoming: {opportunity.title}"
-                urgency = f"on {opportunity.deadline.strftime('%B %d, %Y')}"
-            
-            if is_low_bandwidth:
-                # Minimal plain text for poor connections
-                body = (
-                    f"Reminder: {opportunity.title} is due {urgency}.\n\n"
-                    f"Deadline: {opportunity.deadline.strftime('%m/%d/%Y %I:%M%p')}\n"
-                    f"Apply: {opportunity.application_link}\n\n"
-                    f"---\n"
-                    f"Sent via HackItAll Lite"
-                ).strip()
-            else:
-                body = f"""
+        if is_low_bandwidth:
+            # Minimal plain text for poor connections
+            body = (
+                f"Reminder: {opportunity.title} is due {urgency}.\n\n"
+                f"Deadline: {opportunity.deadline.strftime('%m/%d/%Y %I:%M%p')}\n"
+                f"Apply: {opportunity.application_link}\n\n"
+                f"---\n"
+                f"Sent via HackItAll Lite"
+            ).strip()
+        else:
+            body = f"""
 Hello!
 
 This is a reminder that the deadline for "{opportunity.title}" is {urgency}.
@@ -372,11 +366,7 @@ Don't miss this opportunity! Apply now.
 
 Best regards,
 Opportunity Access Platform
-                """.strip()
-        
-        else:
-            subject = f"Update: {opportunity.title}"
-            body = f"There's an update regarding {opportunity.title}."
+            """.strip()
         
         return subject, body
     
@@ -394,16 +384,12 @@ Opportunity Access Platform
         Returns:
             SMS message string (max 160 chars)
         """
-        if reminder_type == "deadline":
-            days_until = (opportunity.deadline - datetime.utcnow()).days
-            
-            if days_until <= 1:
-                message = f"⏰ TOMORROW: {opportunity.title} deadline! Apply: {opportunity.application_link}"
-            elif days_until <= 7:
-                message = f"📅 {days_until}d left: {opportunity.title}. Apply: {opportunity.application_link}"
-            else:
-                deadline_str = opportunity.deadline.strftime('%m/%d')
-                message = f"📅 {opportunity.title} due {deadline_str}. Apply: {opportunity.application_link}"
+        if reminder_type == "submission_3h":
+            message = f"🚨 URGENT: 3h left for {opportunity.title}! Submit now: {opportunity.application_link}"
+        elif reminder_type == "submission_24h":
+            message = f"⏰ 24h to go: {opportunity.title} deadline tomorrow. Link: {opportunity.application_link}"
+        elif reminder_type == "hackathon_1d":
+            message = f"🚀 Hackathon Tomorrow: {opportunity.title}. Link: {opportunity.application_link}"
         else:
             message = f"Update: {opportunity.title}. Check: {opportunity.application_link}"
         
@@ -515,6 +501,8 @@ Opportunity Access Platform
             "user_id": reminder.user_id,
             "opportunity_id": reminder.opportunity_id,
             "scheduled_time": reminder.scheduled_time.isoformat(),
+            "type": reminder.type,
             "sent": reminder.sent,
+            "is_read": reminder.is_read,
             "created_at": reminder.created_at.isoformat()
         }

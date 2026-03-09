@@ -14,11 +14,15 @@ api.interceptors.request.use(
   async (config) => {
     // Clerk seamlessly manages the JWT session client-side
     // We inject it into the authorization header so FastAPI can decode it
-    if (window.Clerk && window.Clerk.session) {
-      const token = await window.Clerk.session.getToken();
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    try {
+      if (window.Clerk) {
+        const token = await window.Clerk.session?.getToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
+    } catch (error) {
+      console.error('Failed to get Clerk token:', error);
     }
     return config;
   },
@@ -52,32 +56,30 @@ export const profileAPI = {
 // Opportunities API
 export const opportunitiesAPI = {
   search: async (params = {}) => {
-    // No auth required for browsing
-    const response = await axios.get('/api/opportunities', { params });
+    // No auth required for browsing, but use api instance for consistency
+    const response = await api.get('/opportunities', { params });
     return response.data;
   },
 
   semanticSearch: async (query, limit = 10) => {
-    const response = await axios.get('/api/opportunities/search/semantic', {
+    const response = await api.get('/opportunities/search/semantic', {
       params: { q: query, limit }
     });
     return response.data;
   },
 
   getById: async (id) => {
-    // No auth required for viewing details
-    const response = await axios.get(`/api/opportunities/${id}`);
+    const response = await api.get(`/opportunities/${id}`);
     return response.data;
   },
 
   getRecommendations: async (limit = 10) => {
-    // Requires auth
     const response = await api.get('/recommendations', { params: { limit } });
     return response.data;
   },
 
   getTrending: async () => {
-    const response = await axios.get('/api/opportunities/trending');
+    const response = await api.get('/opportunities/trending');
     return response.data;
   },
 
@@ -92,8 +94,7 @@ export const opportunitiesAPI = {
   },
 
   getScoutAnalysis: async (id) => {
-    // Strategic 'Alpha' scout report
-    const response = await api.get(`/api/opportunities/${id}/scout`);
+    const response = await api.get(`/opportunities/${id}/scout`);
     return response.data;
   },
 };
@@ -127,18 +128,20 @@ export const trackingAPI = {
     await api.delete(`/tracked/${opportunityId}`);
   },
 
-  addParticipation: async (opportunityId, status, notes = null) => {
+  addParticipation: async (opportunityId, status, current_round = "1", notes = null) => {
     const response = await api.post('/participation', {
       opportunity_id: opportunityId,
       status,
+      current_round,
       notes,
     });
     return response.data;
   },
 
-  updateParticipation: async (participationId, status, notes = null) => {
+  updateParticipation: async (participationId, status, current_round = null, notes = null) => {
     const response = await api.put(`/participation/${participationId}`, {
       status,
+      current_round,
       notes,
     });
     return response.data;
@@ -195,19 +198,19 @@ export const teamsAPI = {
 
   getBlueprint: async (teamId) => {
     // 48-hour AI Sprint Roadmap
-    const response = await api.get(`/api/teams/${teamId}/blueprint`);
+    const response = await api.get(`/teams/${teamId}/blueprint`);
     return response.data;
   },
 
   getPitch: async (teamId) => {
     // Strategic Pitch Assets
-    const response = await api.get(`/api/teams/${teamId}/pitch`);
+    const response = await api.get(`/teams/${teamId}/pitch`);
     return response.data;
   },
 
   auditSubmission: async (teamId, data) => {
     // AI Judge Submission Audit
-    const response = await api.post(`/api/teams/${teamId}/audit`, data);
+    const response = await api.post(`/teams/${teamId}/audit`, data);
     return response.data;
   },
 };

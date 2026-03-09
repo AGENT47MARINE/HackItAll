@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { teamsAPI } from '../services/api';
+import PremiumIcon from './PremiumIcon';
 import './TeamSection.css';
 
 export default function TeamSection({ opportunityId }) {
@@ -80,11 +81,13 @@ export default function TeamSection({ opportunityId }) {
     return (
         <div className="team-section">
             <div className="team-header-row">
-                <h2 className="detail-card-title">🤝 Find a Team</h2>
+                <h2 className="detail-card-title flex items-center gap-3">
+                    <PremiumIcon name="handshake" size={20} />
+                    Find a Team
+                </h2>
                 {isSignedIn && !showCreateForm && (
                     <button
-                        className="detail-button apply"
-                        style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+                        className="detail-button apply team-create-btn"
                         onClick={() => setShowCreateForm(true)}
                     >
                         + Create Team
@@ -163,14 +166,16 @@ export default function TeamSection({ opportunityId }) {
                                         className="detail-button save mt-2 w-full text-xs py-2 bg-blue-500/10 border-blue-500/30 flex items-center justify-center gap-2"
                                         onClick={() => window.location.href = `/teams/${team.id}/blueprint`}
                                     >
-                                        🚀 VIEW AI BATTLE PLAN
+                                        <PremiumIcon name="rocket" size={14} />
+                                        VIEW AI BATTLE PLAN
                                     </button>
                                     <button
                                         className="detail-button apply mt-2 w-full text-xs py-2 bg-purple-500/10 border-purple-500/30 flex items-center justify-center gap-2"
                                         style={{ color: '#a855f7' }}
                                         onClick={() => window.location.href = `/teams/${team.id}/pitch`}
                                     >
-                                        🎙️ GO TO PITCH STUDIO
+                                        <PremiumIcon name="lightning" size={14} />
+                                        GO TO PITCH STUDIO
                                     </button>
                                 </div>
                             )}

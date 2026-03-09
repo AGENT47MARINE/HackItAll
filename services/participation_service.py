@@ -9,7 +9,7 @@ from models.opportunity import Opportunity
 class ParticipationService:
     """Service for managing user participation history."""
     
-    VALID_STATUSES = ["applied", "accepted", "rejected", "completed"]
+    VALID_STATUSES = ["applied", "submitted", "in_review", "accepted", "rejected", "completed"]
     
     def __init__(self, db_session: Session):
         """Initialize the participation service.
@@ -24,6 +24,7 @@ class ParticipationService:
         user_id: str,
         opportunity_id: str,
         status: str,
+        current_round: Optional[str] = "1",
         notes: Optional[str] = None
     ) -> Dict[str, Any]:
         """Add a participation history entry.
@@ -61,6 +62,7 @@ class ParticipationService:
             user_id=user_id,
             opportunity_id=opportunity_id,
             status=status,
+            current_round=current_round,
             notes=notes
         )
         
@@ -76,6 +78,16 @@ class ParticipationService:
         self.db.commit()
         self.db.refresh(participation)
         
+        # Reschedule reminders based on new status
+        try:
+            from services.notification_service import NotificationService
+            notif_service = NotificationService(self.db)
+            notif_service.cancel_opportunity_reminders(user_id, opportunity_id)
+            if status not in ["completed", "rejected"]:
+                notif_service.schedule_deadline_reminders(user_id, opportunity_id, opportunity.deadline)
+        except Exception as e:
+            print(f"[ParticipationService] Failed to reschedule reminders: {e}")
+        
         return self._format_participation(participation)
     
     def update_participation(
@@ -83,6 +95,7 @@ class ParticipationService:
         participation_id: str,
         user_id: str,
         status: Optional[str] = None,
+        current_round: Optional[str] = None,
         notes: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """Update a participation history entry.
@@ -123,11 +136,28 @@ class ParticipationService:
             gamification = GamificationService(self.db)
             gamification.award_xp(user_id, status, reference_id=f"{participation.opportunity_id}_{status}")
             
+        if current_round is not None:
+            participation.current_round = current_round
+            
         if notes is not None:
             participation.notes = notes
         
         self.db.commit()
         self.db.refresh(participation)
+        
+        # Reschedule reminders if status or round changed
+        if status is not None or current_round is not None:
+            try:
+                from services.notification_service import NotificationService
+                from models.opportunity import Opportunity
+                notif_service = NotificationService(self.db)
+                opportunity = self.db.query(Opportunity).filter(Opportunity.id == participation.opportunity_id).first()
+                if opportunity:
+                    notif_service.cancel_opportunity_reminders(user_id, participation.opportunity_id)
+                    if status not in ["completed", "rejected"]:
+                        notif_service.schedule_deadline_reminders(user_id, participation.opportunity_id, opportunity.deadline)
+            except Exception as e:
+                print(f"[ParticipationService] Failed to reschedule reminders: {e}")
         
         return self._format_participation(participation)
     
@@ -159,7 +189,8 @@ class ParticipationService:
                 "id": opportunity.id,
                 "title": opportunity.title,
                 "type": opportunity.type,
-                "deadline": opportunity.deadline.isoformat()
+                "deadline": opportunity.deadline.isoformat(),
+                "current_round": participation.current_round
             }
             result.append(entry)
         
@@ -179,6 +210,7 @@ class ParticipationService:
             "user_id": participation.user_id,
             "opportunity_id": participation.opportunity_id,
             "status": participation.status,
+            "current_round": participation.current_round,
             "notes": participation.notes,
             "created_at": participation.created_at.isoformat()
         }

@@ -19,8 +19,13 @@ class TrackedOpportunityResponse(BaseModel):
     """Response model for tracked opportunity data."""
     user_id: str
     opportunity_id: str
+    participation_id: Optional[str] = None
     saved_at: str
     is_expired: bool
+    team_status: str
+    team_id: Optional[str] = None
+    status: str
+    current_round: str
     opportunity: dict
 
 
@@ -40,6 +45,7 @@ class ParticipationHistoryResponse(BaseModel):
     user_id: str
     opportunity_id: str
     status: str
+    current_round: str
     notes: Optional[str]
     created_at: str
 
@@ -47,13 +53,15 @@ class ParticipationHistoryResponse(BaseModel):
 class AddParticipationRequest(BaseModel):
     """Request model for adding participation history."""
     opportunity_id: str = Field(..., description="ID of the opportunity")
-    status: str = Field(..., description="Status: applied, accepted, rejected, or completed")
+    status: str = Field(..., description="Status: applied, accepted, rejected, etc.")
+    current_round: Optional[str] = Field(default="1", description="Current round of the hackathon")
     notes: Optional[str] = Field(default=None, description="Optional notes about participation")
 
 
 class UpdateParticipationRequest(BaseModel):
     """Request model for updating participation status."""
     status: Optional[str] = Field(default=None, description="Updated status")
+    current_round: Optional[str] = Field(default=None, description="Updated round")
     notes: Optional[str] = Field(default=None, description="Updated notes")
 
 
@@ -265,6 +273,7 @@ async def add_participation(
             user_id=current_user_id,
             opportunity_id=request.opportunity_id,
             status=request.status,
+            current_round=request.current_round,
             notes=request.notes
         )
         
@@ -308,6 +317,7 @@ async def update_participation(
             participation_id=participation_id,
             user_id=current_user_id,
             status=request.status,
+            current_round=request.current_round,
             notes=request.notes
         )
         

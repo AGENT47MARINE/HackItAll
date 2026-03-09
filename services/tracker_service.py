@@ -105,13 +105,23 @@ class TrackerService:
         ).filter(
             TrackedOpportunity.user_id == user_id
         ).order_by(
-            Opportunity.deadline.asc()  # Sort by deadline ascending (earliest first)
+            Opportunity.deadline.asc()
         ).all()
+
+        # Batch fetch team memberships to avoid N+1
+        from models.team import Team, TeamMember
+        user_team_members = self.db.query(TeamMember).join(Team).filter(
+            TeamMember.user_id == user_id
+        ).all()
+        
+        # Map opportunity_id -> TeamMember
+        teams_map = {tm.team.opportunity_id: tm for tm in user_team_members}
         
         # Format results
         result = []
         for tracked, opportunity in tracked_list:
-            result.append(self._format_tracked_opportunity(tracked, opportunity))
+            team_member = teams_map.get(opportunity.id)
+            result.append(self._format_tracked_opportunity(tracked, opportunity, team_member))
         
         return result
     
@@ -179,22 +189,25 @@ class TrackerService:
         return count
     
     def _format_tracked_opportunity(self, tracked: TrackedOpportunity, 
-                                   opportunity: Opportunity) -> Dict[str, Any]:
+                                   opportunity: Opportunity,
+                                   team_member: Optional[Any] = None) -> Dict[str, Any]:
         """Format tracked opportunity data for response.
         
         Args:
             tracked: TrackedOpportunity model instance
             opportunity: Opportunity model instance
+            team_member: Optional TeamMember model instance if already fetched
             
         Returns:
             Dictionary containing formatted tracked opportunity data
         """
-        # Get team status for this opportunity
-        from models.team import Team, TeamMember
-        team_member = self.db.query(TeamMember).join(Team).filter(
-            Team.opportunity_id == opportunity.id,
-            TeamMember.user_id == tracked.user_id
-        ).first()
+        # If team_member wasn't provided, try to fetch it (fallback)
+        if team_member is None:
+            from models.team import Team, TeamMember
+            team_member = self.db.query(TeamMember).join(Team).filter(
+                Team.opportunity_id == opportunity.id,
+                TeamMember.user_id == tracked.user_id
+            ).first()
 
         team_status = "solo"
         team_id = None
@@ -203,14 +216,33 @@ class TrackerService:
             team_id = team_member.team_id
 
         # Use centralized formatter
+        from utils.formatters import ResponseFormatter
         opportunity_data = ResponseFormatter.format_opportunity_response(opportunity)
-        
+
+        # Fetch latest status/participation record
+        from models.tracking import ParticipationHistory
+        latest_participation = self.db.query(ParticipationHistory).filter(
+            ParticipationHistory.user_id == tracked.user_id,
+            ParticipationHistory.opportunity_id == opportunity.id
+        ).order_by(ParticipationHistory.created_at.desc()).first()
+
+        status = "saved"
+        current_round = "1"
+        participation_id = None
+        if latest_participation:
+            status = latest_participation.status
+            current_round = latest_participation.current_round
+            participation_id = latest_participation.id
+
         return {
             "user_id": tracked.user_id,
             "opportunity_id": tracked.opportunity_id,
+            "participation_id": participation_id,
             "saved_at": tracked.saved_at.isoformat(),
             "is_expired": tracked.is_expired,
             "team_status": team_status,
             "team_id": team_id,
+            "status": status,
+            "current_round": current_round,
             "opportunity": opportunity_data
         }

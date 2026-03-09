@@ -1,14 +1,16 @@
 .opportunity-card {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(10px);
+  background: rgba(18, 18, 24, 0.85);
+  /* Removed backdrop-filter:blur — was causing 10+ GPU blur passes during scroll */
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 8px;
   padding: 1.75rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
   position: relative;
   overflow: hidden;
+  /* Promote to own compositing layer from the start, preventing mid-scroll layer creation */
+  will-change: transform;
 }
 
 .opportunity-card::before {
@@ -98,40 +100,40 @@
 }
 
 .tracked-badge {
-  background: rgba(255, 107, 107, 0.1);
+  background: rgba(40, 14, 14, 0.9);
   color: #ff8787;
   padding: 0.375rem 0.6rem;
   border-radius: 4px;
   font-size: 0.6875rem;
   font-weight: 700;
   border: 1px solid rgba(255, 107, 107, 0.2);
-  backdrop-filter: blur(10px);
+  /* Removed backdrop-filter:blur */
 }
 
 .participant-badge {
-  background: rgba(51, 136, 255, 0.1);
+  background: rgba(10, 20, 45, 0.9);
   color: #3388ff;
   padding: 0.375rem 0.6rem;
   border-radius: 4px;
   font-size: 0.6875rem;
   font-weight: 700;
   border: 1px solid rgba(51, 136, 255, 0.2);
-  backdrop-filter: blur(10px);
+  /* Removed backdrop-filter:blur */
 }
 
 .global-badge {
-  background: rgba(0, 221, 235, 0.08);
+  background: rgba(0, 20, 22, 0.9);
   color: #00ddeb;
   padding: 0.375rem 0.6rem;
   border-radius: 4px;
   font-size: 0.6875rem;
   font-weight: 700;
   border: 1px solid rgba(0, 221, 235, 0.2);
-  backdrop-filter: blur(10px);
+  /* Removed backdrop-filter:blur */
 }
 
 .type-badge {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(30, 30, 40, 0.9);
   color: rgba(255, 255, 255, 0.8);
   padding: 0.375rem 0.875rem;
   border-radius: 4px;
@@ -139,7 +141,7 @@
   font-weight: 600;
   text-transform: uppercase;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  /* Removed backdrop-filter:blur */
   letter-spacing: 0.05em;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -152,18 +154,25 @@
 /* Match Score Ring (Stripes) */
 .match-score-container {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 54px;
-  height: 54px;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 58px;
+  height: 58px;
   z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.3);
+  background: #000;
   border-radius: 50%;
-  backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.opportunity-card:hover .match-score-container {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.3);
 }
 
 .match-ring-svg {
@@ -180,20 +189,21 @@
 
 .match-ring-fill {
   fill: none;
-  stroke: url(#score-gradient);
-  stroke-width: 4;
+  stroke-width: 4.5;
   stroke-linecap: round;
-  transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-  stroke-dasharray: 4 2;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  stroke-dasharray: 157;
+  /* Circumference */
 }
 
 .match-score-text {
   position: absolute;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #fff;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #10b981;
+  /* Green text to match border */
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .card-link {
@@ -396,6 +406,7 @@
 .lite-card .card-description {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: 0.8rem !important;

@@ -50,7 +50,7 @@ class GamificationService:
             Tuple: (XP gained, True if tier promoted)
         """
         xp_gain = self.XP_REWARDS.get(action_type, 0)
-        if xp_gain <= 0:
+        if xp_gain <= 0 and action_type != "daily_login": # Allow daily_login even if xp is 0 (unlikely)
             return 0, False
 
         # 1. Log Transaction (only if reference_id unique for this action/user)
@@ -63,41 +63,102 @@ class GamificationService:
             if existing: # Avoid double-rewarding same content/action
                 return 0, False
 
-        transaction = XPTransaction(
-            user_id=user_id,
-            xp_amount=xp_gain,
-            action_type=action_type,
-            reference_id=reference_id
-        )
-        self.db.add(transaction)
-
         # 2. Update User Stats (create if not exist)
         stats = self.db.query(UserXP).filter(UserXP.user_id == user_id).first()
         if not stats:
-            stats = UserXP(user_id=user_id, total_xp=0, league_tier=1, last_login_at=datetime.utcnow())
+            stats = UserXP(user_id=user_id, total_xp=0, league_tier=1, last_login_at=datetime.utcnow() - timedelta(days=2))
             self.db.add(stats)
+            self.db.flush()
 
         old_tier = stats.league_tier
-        stats.total_xp += xp_gain
-        stats.last_xp_at = datetime.utcnow()
-        stats.updated_at = datetime.utcnow()
-
+        
         # 3. Handle Login Streaks (if daily_login)
         if action_type == "daily_login":
             now = datetime.utcnow()
-            diff = (now.date() - stats.last_login_at.date()).days
-            if diff == 1:
-                stats.streak_days += 1
-            elif diff > 1:
-                stats.streak_days = 1 # Streak broken
+            # Calculate days since last login
+            if stats.last_login_at:
+                last_date = stats.last_login_at.date()
+                today_date = now.date()
+                diff = (today_date - last_date).days
+                
+                if diff == 1:
+                    stats.streak_days += 1
+                elif diff > 1:
+                    stats.streak_days = 1 # Streak broken
+                # if diff == 0, keep current streak
+            else:
+                stats.streak_days = 1
+                
             stats.last_login_at = now
+            
+            # Check for streak achievements
+            if stats.streak_days >= 7:
+                self.unlock_achievement(user_id, "streak_7")
+            if stats.streak_days >= 30:
+                self.unlock_achievement(user_id, "streak_30")
+
+        # Only reward if we haven't rewarded this reference_id yet (already checked above)
+        if xp_gain > 0:
+            transaction = XPTransaction(
+                user_id=user_id,
+                xp_amount=xp_gain,
+                action_type=action_type,
+                reference_id=reference_id
+            )
+            self.db.add(transaction)
+            stats.total_xp += xp_gain
+            stats.last_xp_at = datetime.utcnow()
+
+        stats.updated_at = datetime.utcnow()
 
         # 4. Calculate Tier Promotion
         new_tier = self._calculate_tier(stats.total_xp)
         stats.league_tier = new_tier
         
+        # 5. Milestone Achievements
+        if action_type == "track":
+            track_count = self.db.query(XPTransaction).filter(XPTransaction.user_id == user_id, XPTransaction.action_type == "track").count()
+            if track_count >= 1: self.unlock_achievement(user_id, "first_steps")
+            if track_count >= 10: self.unlock_achievement(user_id, "tracker_10")
+        
+        if action_type == "profile_complete":
+            self.unlock_achievement(user_id, "onboarding")
+
         self.db.commit()
         return xp_gain, (new_tier > old_tier)
+
+    def unlock_achievement(self, user_id: str, achievement_code: str) -> bool:
+        """Unlock an achievement for a user and award its bonus XP."""
+        achievement = self.db.query(Achievement).filter(Achievement.code == achievement_code).first()
+        if not achievement:
+            return False
+            
+        exists = self.db.query(UserAchievement).filter(
+            UserAchievement.user_id == user_id,
+            UserAchievement.achievement_id == achievement.id
+        ).first()
+        
+        if exists:
+            return False
+            
+        user_ach = UserAchievement(user_id=user_id, achievement_id=achievement.id)
+        self.db.add(user_ach)
+        
+        # Award bonus XP for achievement
+        if achievement.xp_reward > 0:
+            stats = self.db.query(UserXP).filter(UserXP.user_id == user_id).first()
+            if stats:
+                stats.total_xp += achievement.xp_reward
+                
+            transaction = XPTransaction(
+                user_id=user_id,
+                xp_amount=achievement.xp_reward,
+                action_type="achievement",
+                reference_id=achievement_code
+            )
+            self.db.add(transaction)
+            
+        return True
 
     def _calculate_tier(self, total_xp: int) -> int:
         """Heuristic to map total XP to league tier levels."""
@@ -144,7 +205,7 @@ class GamificationService:
             "streak_days": stats.streak_days,
             "next_tier_xp": next_xp,
             "progress_pct": pct,
-            "unlocked_badges": [a.achievement_id for a in achievements],
+            "unlocked_badges": [a.achievement.code for a in achievements],
             "last_login": stats.last_login_at.isoformat() if stats.last_login_at else None,
             "rank": rank,
             "total_users": total_users
@@ -153,14 +214,20 @@ class GamificationService:
     def get_leaderboard(self, limit: int = 20) -> List[Dict[str, Any]]:
         """Rank users by total XP for the global leaderboard."""
         from models.user import User
-        results = self.db.query(User.email, UserXP.total_xp, UserXP.league_tier, UserXP.streak_days)\
+        results = self.db.query(User.email, UserXP.total_xp, UserXP.league_tier, UserXP.streak_days, User.username)\
             .join(UserXP, User.id == UserXP.user_id)\
             .order_by(UserXP.total_xp.desc())\
             .limit(limit).all()
         
+        def mask_email(email):
+            parts = email.split('@')
+            if len(parts[0]) <= 2:
+                return parts[0] + "****"
+            return parts[0][0] + "****" + parts[0][-1]
+
         return [
             {
-                "email": r[0].split('@')[0], # Mask full email
+                "email": r[4] if r[4] else mask_email(r[0]), # Use username if available, else mask 
                 "xp": r[1],
                 "tier": r[2],
                 "streak": r[3]

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { teamsAPI } from '../services/api';
 import GridBackground from '../components/GridBackground';
 import GlassSurface from '../components/GlassSurface';
+import PremiumIcon from '../components/PremiumIcon';
 import PixelLogo from '../components/PixelLogo';
 import './Pages.css';
 
@@ -60,9 +61,6 @@ export default function PitchStudioView() {
     return (
         <div className="detail-page pb-20">
             <GridBackground />
-            <div className="page-logo-watermark">
-                <PixelLogo />
-            </div>
 
             <div className="detail-content container mx-auto px-4">
                 <div className="mb-10 text-center animate-in">
@@ -79,12 +77,13 @@ export default function PitchStudioView() {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-6 py-2 rounded-full border text-sm font-bold uppercase transition-all whitespace-nowrap ${activeTab === tab
+                            className={`px-6 py-2 rounded-full border text-sm font-bold uppercase transition-all whitespace-nowrap flex items-center gap-2 ${activeTab === tab
                                 ? 'bg-purple-500 text-white border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)]'
                                 : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10'
                                 }`}
                         >
-                            {tab === 'elevator' ? '⚡ Elevator Pitch' : tab === 'script' ? '📜 Demo Script' : '🖼️ Slide Blueprint'}
+                            {tab === 'elevator' ? <PremiumIcon name="lightning" size={14} /> : tab === 'script' ? <PremiumIcon name="scroll" size={14} /> : <PremiumIcon name="frame" size={14} />}
+                            {tab === 'elevator' ? 'Elevator Pitch' : tab === 'script' ? 'Demo Script' : 'Slide Blueprint'}
                         </button>
                     ))}
                 </div>
@@ -133,8 +132,9 @@ export default function PitchStudioView() {
                 {/* Audit CTA (Coming Next) */}
                 <div className="mt-20 text-center opacity-40 hover:opacity-100 transition-opacity">
                     <p className="text-sm text-white/50 mb-4">Want to test your pitch against the AI Judge?</p>
-                    <button className="px-8 py-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full font-bold uppercase tracking-widest text-xs cursor-not-allowed">
-                        🛡️ AI JUDGE AUDIT (LOCKED)
+                    <button className="px-8 py-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full font-bold uppercase tracking-widest text-xs cursor-not-allowed flex items-center gap-2 mx-auto">
+                        <PremiumIcon name="shield" size={16} />
+                        AI JUDGE AUDIT (LOCKED)
                     </button>
                     <p className="text-[10px] mt-2 text-white/20 italic">Unlock this by finishing your draft submission.</p>
                 </div>

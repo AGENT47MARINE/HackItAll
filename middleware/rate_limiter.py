@@ -28,9 +28,14 @@ class RateLimiter(BaseHTTPMiddleware):
             return f"user:{request.state.user.get('user_id', 'unknown')}"
         
         # Fall back to IP address
-        forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
-            return f"ip:{forwarded.split(',')[0].strip()}"
+        # MITIGATION: Only trust X-Forwarded-For if explicitly configured (prevent IP spoofing)
+        import os
+        trust_proxy = os.getenv("TRUST_PROXY", "False").lower() == "true"
+        
+        if trust_proxy:
+            forwarded = request.headers.get("X-Forwarded-For")
+            if forwarded:
+                return f"ip:{forwarded.split(',')[0].strip()}"
         
         client_host = request.client.host if request.client else "unknown"
         return f"ip:{client_host}"

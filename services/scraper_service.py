@@ -4,7 +4,8 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import re
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
+from utils.tags import clean_tags
 
 class ScraperService:
     """Service for extracting metadata from external opportunity URLs."""
@@ -48,21 +49,20 @@ class ScraperService:
             
             # 4. Extract Keywords/Skills from body text
             body_text = soup.get_text(separator=' ', strip=True).lower()
-            skills, tags = self._extract_keywords(body_text, title.lower() + " " + description.lower())
-            
-            # Determine type based on keywords
-            opp_type = self._determine_type(title.lower() + " " + tags)
+            # Clean and split tags
+            import json
+            parsed_tags = json.loads(tags) if isinstance(tags, str) else tags
+            cleaned_tags, eligibility = clean_tags(parsed_tags)
             
             return {
                 "title": title[:200] if title else "Unknown Opportunity",
                 "description": description[:1000] if description else "No description provided.",
                 "image_url": image_url,
                 "required_skills": skills,
-                "tags": tags,
+                "tags": json.dumps(cleaned_tags),
+                "eligibility": eligibility or "Open to all",
                 "type": opp_type,
                 "application_link": url,
-                # We can't reliably parse arbitrary deadlines from HTML without LLMs, 
-                # so we will leave it empty for the user to confirm/edit manually on frontend
                 "deadline": None 
             }
             

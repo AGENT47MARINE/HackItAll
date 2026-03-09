@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trackingAPI } from '../services/api';
+import PremiumIcon from '../components/PremiumIcon';
 import './TrackedDashboard.css';
 
 // ── Particle Background (Constellation Effect) ────────────────
@@ -83,7 +84,7 @@ function ParticleCanvas() {
 // ── Timeline Component ──────────────────────────────────────────
 const PHASES = ['Saved', 'Applied', 'Submitted', 'In Review', 'Result'];
 
-function StatusTimeline({ status }) {
+function StatusTimeline({ status, round }) {
   const statusMap = {
     saved: 0,
     applied: 1,
@@ -96,10 +97,13 @@ function StatusTimeline({ status }) {
   const activeIdx = statusMap[(status || 'saved').toLowerCase()] ?? 0;
 
   return (
-    <div>
+    <div className="status-timeline-container mb-12">
       <div className="card-timeline">
         {PHASES.map((_, i) => (
-          <div className="timeline-step" key={i}>
+          <div
+            className={`timeline-step ${i === PHASES.length - 1 ? 'last-step' : ''}`}
+            key={i}
+          >
             <div
               className={`timeline-dot ${i < activeIdx ? 'completed' : i === activeIdx ? 'active' : ''
                 }`}
@@ -110,11 +114,14 @@ function StatusTimeline({ status }) {
           </div>
         ))}
       </div>
-      <div className="timeline-labels">
+      <div className="timeline-labels text-[8px]">
         {PHASES.map((label, i) => (
-          <span key={i} className={`timeline-label ${i === activeIdx ? 'active' : ''}`}>
+          <div key={i} className={`timeline-label-wrapper ${i === activeIdx ? 'active' : ''}`}>
             {label}
-          </span>
+            {i === activeIdx && round && round !== "1" && (
+              <span className="round-badge ml-1">R{round}</span>
+            )}
+          </div>
         ))}
       </div>
     </div>
@@ -124,17 +131,17 @@ function StatusTimeline({ status }) {
 // ── Team Badge Component ──────────────────────────────────────
 function TeamBadge({ status, onClick }) {
   const configs = {
-    solo: { label: 'Solo', class: 'status-solo', icon: '👤' },
-    member: { label: 'In Team', class: 'status-member', icon: '👥' },
-    leader: { label: 'Team Leader', class: 'status-leader', icon: '👑' },
+    solo: { label: 'Solo', class: 'status-solo', name: 'target' },
+    member: { label: 'In Team', class: 'status-member', name: 'users' },
+    leader: { label: 'Team Leader', class: 'status-leader', name: 'shield' },
   };
   const config = configs[status] || configs.solo;
 
   return (
-    <div className={`team-status-badge ${config.class}`} onClick={onClick}>
-      <span className="status-icon">{config.icon}</span>
+    <div className={`team-status-badge ${config.class} flex items-center gap-2`} onClick={onClick}>
+      <PremiumIcon name={config.name} size={14} />
       <span className="status-label">{config.label}</span>
-      {status === 'solo' && <span className="find-squad-nudge">Find Squad →</span>}
+      {status === 'solo' && <span className="find-squad-nudge ml-1">Find Squad →</span>}
     </div>
   );
 }
@@ -179,6 +186,35 @@ export default function Tracked() {
       console.error('Error loading tracked:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (item, newStatus) => {
+    try {
+      if (item.participation_id) {
+        await trackingAPI.updateParticipation(item.participation_id, newStatus);
+      } else {
+        await trackingAPI.addParticipation(item.opportunity_id, newStatus);
+      }
+      loadTracked();
+    } catch (error) {
+      alert('Failed to update status.');
+    }
+  };
+
+  const handleRoundUpdate = async (item) => {
+    const currentRound = parseInt(item.current_round || "1");
+    const nextRound = String(currentRound + 1);
+    try {
+      if (item.participation_id) {
+        await trackingAPI.updateParticipation(item.participation_id, item.status, nextRound);
+      } else {
+        await trackingAPI.addParticipation(item.opportunity_id, item.status || 'applied', nextRound);
+      }
+      loadTracked();
+    } catch (error) {
+      console.error(error);
+      alert('Failed to update round.');
     }
   };
 
@@ -332,35 +368,83 @@ export default function Tracked() {
                     />
 
                     {/* Timeline */}
-                    <StatusTimeline status={item.status || 'saved'} />
+                    <StatusTimeline status={item.status || 'saved'} round={item.current_round} />
+
+                    {/* Round & Status Actions */}
+                    <div className="status-quick-actions mb-4 flex flex-wrap gap-2">
+                      <button
+                        className={`status-chip ${item.status === 'applied' ? 'active' : ''}`}
+                        onClick={() => handleStatusUpdate(item, 'applied')}
+                      >
+                        {item.status === 'applied' ? '✓ Applied' : 'Applied'}
+                      </button>
+                      <button
+                        className={`status-chip ${item.status === 'submitted' ? 'active' : ''}`}
+                        onClick={() => handleStatusUpdate(item, 'submitted')}
+                      >
+                        {item.status === 'submitted' ? '✓ Submitted' : 'Submitted'}
+                      </button>
+                      <button
+                        className={`status-chip ${item.status === 'in_review' ? 'active' : ''}`}
+                        onClick={() => handleStatusUpdate(item, 'in_review')}
+                      >
+                        {item.status === 'in_review' ? '✓ In Review' : 'In Review'}
+                      </button>
+                      <button
+                        className={`status-chip ${item.status === 'accepted' ? 'active' : ''}`}
+                        onClick={() => handleStatusUpdate(item, 'accepted')}
+                      >
+                        {item.status === 'accepted' ? '✓ Won' : 'Won'}
+                      </button>
+                      <button
+                        className="round-chip"
+                        onClick={() => handleRoundUpdate(item)}
+                      >
+                        + Round {parseInt(item.current_round || "1") + 1}
+                      </button>
+                    </div>
 
                     {/* Actions */}
                     <div className="card-actions">
-                      {opp.application_link && (
-                        <a
-                          href={opp.application_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="card-action-btn visit-btn"
-                        >
-                          Visit ↗
-                        </a>
-                      )}
-                      {item.team_status !== 'solo' && (
-                        <button
-                          className="card-action-btn visit-btn flex items-center gap-1"
-                          style={{ borderColor: '#ef4444', color: '#ef4444' }}
-                          onClick={() => window.location.href = `/teams/${item.team_id || 'PRO_LOCKED'}/audit`}
-                        >
-                          🛡️ Audit <span className="text-[8px] bg-red-500 text-white px-1 rounded ml-1">PRO</span>
-                        </button>
-                      )}
-                      <button
-                        className="card-action-btn remove-btn"
-                        onClick={() => handleRemove(item.opportunity_id)}
-                      >
-                        Remove
-                      </button>
+                      <div className="flex flex-wrap gap-2 w-full justify-between items-center">
+                        <div className="flex gap-2">
+                          {opp.application_link && (
+                            <a
+                              href={opp.application_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="card-action-btn visit-btn"
+                            >
+                              Visit ↗
+                            </a>
+                          )}
+                          <button
+                            className="card-action-btn remove-btn"
+                            onClick={() => handleRemove(item.opportunity_id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <button
+                            className="card-action-btn audit-btn flex items-center justify-center gap-2"
+                            onClick={() => window.location.href = `/teams/${item.team_id || 'PRO_LOCKED'}/pitch`}
+                          >
+                            <PremiumIcon name="lightning" size={14} />
+                            Pitch <span className="text-[8px] bg-purple-500 text-white px-1 rounded ml-1">STUDIO</span>
+                          </button>
+
+                          <button
+                            className="card-action-btn audit-btn flex items-center justify-center gap-2"
+                            style={{ borderColor: '#ef4444', color: '#ef4444' }}
+                            onClick={() => window.location.href = `/teams/${item.team_id || 'PRO_LOCKED'}/audit`}
+                          >
+                            <PremiumIcon name="shield" size={14} />
+                            Audit <span className="text-[8px] bg-red-500 text-white px-1 rounded ml-1">JUDGE</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 );

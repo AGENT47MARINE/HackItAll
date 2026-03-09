@@ -27,6 +27,7 @@ from api.educational import router as educational_router
 from api.utility import router as utility_router
 from api.gamification import router as gamification_router
 from api.team import router as team_router
+from api.notifications import router as notifications_router
 from middleware.error_handler import setup_error_handlers
 from middleware.rate_limiter import RateLimiter
 
@@ -65,9 +66,11 @@ app = FastAPI(
 )
 
 # Configure CORS
+import os
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -89,6 +92,7 @@ app.include_router(educational_router)
 app.include_router(utility_router)
 app.include_router(gamification_router)
 app.include_router(team_router)
+app.include_router(notifications_router)
 
 @app.get("/")
 async def root():

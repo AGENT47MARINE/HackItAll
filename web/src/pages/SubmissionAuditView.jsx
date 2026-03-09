@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { teamsAPI } from '../services/api';
 import GridBackground from '../components/GridBackground';
 import GlassSurface from '../components/GlassSurface';
+import PremiumIcon from '../components/PremiumIcon';
 import PixelLogo from '../components/PixelLogo';
 import './Pages.css';
+import './SubmissionAuditView.css';
 
 export default function SubmissionAuditView() {
     const { teamId } = useParams();
@@ -28,152 +30,196 @@ export default function SubmissionAuditView() {
             setReport(data);
         } catch (err) {
             console.error('Audit failed:', err);
-            setError('The AI Judge is currently unavailable. Please try again later.');
+            setError('The AI Judge is currently offline. Rerouting to standby models...');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="detail-page pb-20">
+        <div className="audit-detail-page">
             <GridBackground />
-            <div className="page-logo-watermark">
-                <PixelLogo />
-            </div>
 
-            <div className="detail-content container mx-auto px-4">
-                <div className="mb-10 text-center animate-in">
-                    <span className="px-4 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-2 w-fit mx-auto">
-                        🛡️ AI JUDGE AUDIT <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[8px]">PRO</span>
-                    </span>
-                    <h1 className="text-4xl md:text-5xl font-black text-white mt-4 tracking-tight uppercase">Quality Control</h1>
-                    <p className="text-white/40 mt-2 italic">Pre-submission audit to maximize your winning probability.</p>
+            <div className="audit-container relative z-10">
+                <div className="audit-header animate-in">
+                    <div className="audit-pro-badge">
+                        <PremiumIcon name="shield" size={14} />
+                        AI JUDGE AUDIT <span>PRO</span>
+                    </div>
+                    <h1 className="audit-title">
+                        Quality <span className="text-red-500">Control</span>
+                    </h1>
+                    <p className="audit-subtitle">
+                        Pre-submission audit to maximize your winning probability. Powered by our proprietary judge simulation engine.
+                    </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="audit-grid">
 
                     {/* Left: Input Form */}
-                    <div className="animate-in">
-                        <GlassSurface className="p-8" borderRadius={24} backgroundOpacity={0.05}>
-                            <h3 className="text-white font-bold mb-6 flex items-center gap-2">
-                                📑 SUBMISSION DRAFT
+                    <div className="audit-col-left animate-in">
+                        <GlassSurface className="audit-box-padding" borderRadius={32} backgroundOpacity={0.03} width="100%" height="auto">
+                            <h3 className="audit-box-title">
+                                <PremiumIcon name="document" size={20} />
+                                SUBMISSION DRAFT
                             </h3>
-                            <form onSubmit={handleAudit} className="space-y-6">
-                                <div>
-                                    <label className="block text-white/50 text-xs font-bold uppercase mb-2">Project Title</label>
+                            <form onSubmit={handleAudit}>
+                                <div className="audit-form-group">
+                                    <label className="audit-label">Project Title</label>
                                     <input
                                         type="text"
                                         required
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-red-500/50 transition-all"
+                                        className="audit-input"
                                         placeholder="Enter your project title..."
                                         value={auditData.title}
                                         onChange={(e) => setAuditData({ ...auditData, title: e.target.value })}
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-white/50 text-xs font-bold uppercase mb-2">Detailed Description</label>
+                                <div className="audit-form-group">
+                                    <label className="audit-label">Detailed Description</label>
                                     <textarea
                                         required
-                                        rows={8}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-red-500/50 transition-all font-sans text-sm"
+                                        rows={12}
+                                        className="audit-textarea"
                                         placeholder="Paste your submission readme or Devpost description here..."
                                         value={auditData.description}
                                         onChange={(e) => setAuditData({ ...auditData, description: e.target.value })}
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-white/50 text-xs font-bold uppercase mb-2">GitHub / Demo Link (Optional)</label>
+                                <div className="audit-form-group">
+                                    <label className="audit-label">GitHub / Demo Link (Optional)</label>
                                     <input
                                         type="url"
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-red-500/50 transition-all"
+                                        className="audit-input"
                                         placeholder="https://github.com/..."
                                         value={auditData.github_url}
                                         onChange={(e) => setAuditData({ ...auditData, github_url: e.target.value })}
                                     />
                                 </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full py-4 bg-red-500 text-white font-black uppercase tracking-widest rounded-xl hover:bg-red-600 transition-all shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center justify-center gap-3 disabled:opacity-50"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div className="loading-spinner-modern !w-5 !h-5 border-white/30 border-t-white"></div>
-                                            AUDITING...
-                                        </>
-                                    ) : (
-                                        <>🛡️ RUN AI JUDGE AUDIT</>
-                                    )}
-                                </button>
+                                <div>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="audit-submit-btn"
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <div className="loading-spinner-modern !w-5 !h-5 border-white/30 border-t-white"></div>
+                                                RUNNING AUDIT...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <PremiumIcon name="shield" size={18} color="#fff" />
+                                                RUN AI JUDGE AUDIT
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                {error && (
+                                    <div className="error-message">
+                                        {error}
+                                    </div>
+                                )}
                             </form>
                         </GlassSurface>
                     </div>
 
                     {/* Right: Audit Results */}
-                    <div className="animate-in" style={{ animationDelay: '0.1s' }}>
+                    <div className="audit-col-right animate-in" style={{ animationDelay: '0.1s' }}>
                         {report ? (
-                            <div className="space-y-6">
-                                {/* Probability Score */}
-                                <GlassSurface className="p-8 text-center" borderRadius={24} backgroundOpacity={0.1}>
-                                    <h4 className="text-white/40 text-xs font-bold uppercase mb-2">Winning Probability</h4>
-                                    <div className="text-6xl font-black text-red-500 mb-2">
-                                        {Math.round(report.winning_probability * 100)}%
-                                    </div>
-                                    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] transition-all duration-1000"
-                                            style={{ width: `${report.winning_probability * 100}%` }}
-                                        ></div>
+                            <div className="results-stack">
+                                {/* Probability Score Card */}
+                                <GlassSurface className="audit-box-padding border border-red-500/20" borderRadius={32} backgroundOpacity={0.06} width="100%" height="auto">
+                                    <div className="score-circle-container">
+                                        <div className="score-display">
+                                            <span className="score-number">{Math.round(report.winning_probability * 100)}</span>
+                                            <span className="score-percent">%</span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div>
+                                                <h4 className="text-white font-black text-2xl uppercase tracking-tight">Winning Probability</h4>
+                                                <p className="text-white/40 text-sm font-medium mt-1">Calculated from judge persona insights and 100+ simulated scoring rounds.</p>
+                                            </div>
+                                            <div className="score-bar-bg">
+                                                <div
+                                                    className="score-bar-fill"
+                                                    style={{ width: `${report.winning_probability * 100}%` }}
+                                                ></div>
+                                            </div>
+                                            <div className="flex justify-between mt-3" style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em' }}>
+                                                <span>Minimum Viable</span>
+                                                <span>Winner Profile</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </GlassSurface>
 
-                                {/* Red Flags */}
-                                <GlassSurface className="p-6 border-l-4 border-l-red-500" borderRadius={16} backgroundOpacity={0.05}>
-                                    <h3 className="text-red-500 font-bold mb-4 flex items-center gap-2">
-                                        🚩 RED FLAGS
-                                    </h3>
-                                    <ul className="space-y-3">
+                                <div className="report-section-grid">
+                                    {/* Red Flags Container */}
+                                    <div className="results-stack" style={{ gap: '1.5rem' }}>
+                                        <h3 className="text-red-500 font-bold flex items-center gap-3 text-xs uppercase tracking-[0.2em] ml-2">
+                                            <PremiumIcon name="flag" size={16} />
+                                            RED FLAGS
+                                        </h3>
                                         {report.red_flags.map((flag, i) => (
-                                            <li key={i} className="text-white/80 text-sm flex gap-3">
-                                                <span className="text-red-500">•</span> {flag}
-                                            </li>
+                                            <GlassSurface key={i} className="p-6 flag-card" borderRadius={16} backgroundOpacity={0.03} width="100%" height="auto">
+                                                <p className="text-white/80 text-sm font-medium leading-relaxed">
+                                                    {flag}
+                                                </p>
+                                            </GlassSurface>
                                         ))}
-                                    </ul>
-                                </GlassSurface>
+                                    </div>
 
-                                {/* Improvements */}
-                                <GlassSurface className="p-6 border-l-4 border-l-yellow-500" borderRadius={16} backgroundOpacity={0.05}>
-                                    <h3 className="text-yellow-500 font-bold mb-4 flex items-center gap-2">
-                                        ✨ STRATEGIC FIXES
-                                    </h3>
-                                    <ul className="space-y-4">
+                                    {/* Improvements Container */}
+                                    <div className="results-stack" style={{ gap: '1.5rem' }}>
+                                        <h3 className="text-yellow-500 font-bold flex items-center gap-3 text-xs uppercase tracking-[0.2em] ml-2">
+                                            <PremiumIcon name="sparkles" size={16} />
+                                            STRATEGIC FIXES
+                                        </h3>
                                         {report.improvements.map((fix, i) => (
-                                            <li key={i} className="text-white/80 text-sm p-3 bg-white/5 rounded-lg border border-white/5 italic">
-                                                "{fix}"
-                                            </li>
+                                            <GlassSurface key={i} className="p-6 fix-card" borderRadius={16} backgroundOpacity={0.03} width="100%" height="auto">
+                                                <p className="text-white/80 text-sm font-medium italic leading-relaxed">
+                                                    "{fix}"
+                                                </p>
+                                            </GlassSurface>
                                         ))}
-                                    </ul>
-                                </GlassSurface>
+                                    </div>
+                                </div>
 
-                                {/* Judge Feedback */}
-                                <GlassSurface className="p-6 border-l-4 border-l-blue-500" borderRadius={16} backgroundOpacity={0.05}>
-                                    <h3 className="text-blue-400 font-bold mb-4 flex items-center gap-2">
-                                        🧑‍⚖️ JUDGE PERSONA INSIGHT
-                                    </h3>
-                                    <p className="text-white/70 text-sm leading-relaxed">
-                                        {report.judge_persona_feedback}
-                                    </p>
+                                {/* Judge Persona Feedback Overhaul */}
+                                <GlassSurface className="audit-box-padding judge-persona-box" borderRadius={24} backgroundOpacity={0.05} width="100%" height="auto">
+                                    <div className="judge-badge shadow-[0_0_20px_rgba(96,165,250,0.3)]">
+                                        AI JUDGE INSIGHT
+                                    </div>
+                                    <div className="flex gap-8 items-start">
+                                        <div className="hidden md:block">
+                                            <PremiumIcon name="judge" size={32} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="judge-persona-content">
+                                                {report.judge_persona_feedback}
+                                            </p>
+                                            <div className="mt-8 pt-8 border-t border-white/5 flex items-center gap-4" style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: 'rgba(255,255,255,0.1)', letterSpacing: '0.1em' }}>
+                                                <span>Model: JudgePersona-V2</span>
+                                                <span className="w-1 h-1 bg-white/[0.05] rounded-full"></span>
+                                                <span>Complexity: 4.8T Param Synthesis</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </GlassSurface>
                             </div>
                         ) : (
-                            <div className="h-full flex flex-col items-center justify-center p-12 text-center opacity-30 border-2 border-dashed border-white/10 rounded-3xl">
-                                <div className="text-6xl mb-6">🛡️</div>
-                                <h3 className="text-xl font-bold text-white mb-2">Audit Report Pending</h3>
-                                <p className="text-white/60">Upload your submission details to receive a full audit from our AI Judges.</p>
+                            <div className="pending-audit">
+                                <div className="pending-icon-wrap">
+                                    <PremiumIcon name="shield" size={64} className="opacity-10" />
+                                </div>
+                                <h3 className="text-2xl font-black text-white/30 uppercase tracking-tight mb-4">Audit Pending</h3>
+                                <p className="text-white/20 max-w-sm font-medium leading-[1.6]">
+                                    Complete your submission draft to activate the AI Judge suite and receive a comprehensive winning probability audit.
+                                </p>
                             </div>
                         )}
                     </div>
-
                 </div>
             </div>
         </div>

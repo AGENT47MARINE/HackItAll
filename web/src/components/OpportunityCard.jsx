@@ -1,14 +1,33 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo, useMemo } from 'react';
+import PremiumIcon from './PremiumIcon';
 import PixelLogo from './PixelLogo';
 import './OpportunityCard.css';
 
-export default function OpportunityCard({ opportunity, relevanceScore, onRemove }) {
+const OpportunityCard = memo(function OpportunityCard({ opportunity, relevanceScore, onRemove }) {
   const [offset, setOffset] = useState(157); // Circumference for r=25 is ~157
   const [imageError, setImageError] = useState(false);
+  const [useLocalProxy, setUseLocalProxy] = useState(false);
+  // Read once per mount — not on every render
+  const isLiteMode = useMemo(() => localStorage.getItem('liteMode') === 'true', []);
+  // Unique gradient ID per card to prevent SVG ID collisions causing global repaints
+  const gradientId = useMemo(() => `score-gradient-${opportunity.id?.replace(/[^a-z0-9]/gi, '')}`, [opportunity.id]);
+
+  useEffect(() => {
+    // PRE-EMPTIVE PROXY: If we know the domain has CORS/Socket issues (like hacktoskill), proxy it immediately
+    if (opportunity.image_url && (opportunity.image_url.includes('hacktoskill.com') || opportunity.image_url.includes('google.com'))) {
+      console.log(`Pre-emptively proxying image for: ${opportunity.title}`);
+      setUseLocalProxy(true);
+    }
+  }, [opportunity.image_url, opportunity.title]);
 
   const handleImageError = () => {
-    setImageError(true);
+    if (!useLocalProxy && opportunity.image_url) {
+      console.log(`Image failed, trying local proxy for: ${opportunity.title}`);
+      setUseLocalProxy(true);
+    } else {
+      setImageError(true);
+    }
   };
 
   useEffect(() => {
@@ -40,7 +59,7 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
 
   const daysLeft = getDaysUntilDeadline(opportunity.deadline);
   const isUrgent = daysLeft <= 7 && daysLeft > 0;
-  const isLiteMode = localStorage.getItem('liteMode') === 'true';
+  const isExpired = daysLeft < 0;
 
   return (
     <div className={`opportunity-card ${isExpired ? 'expired' : ''} ${isLiteMode ? 'lite-card' : ''}`}>
@@ -49,9 +68,9 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
         <div className="match-score-container" title={`${Math.round(relevanceScore * 100)}% Match`}>
           <svg className="match-ring-svg">
             <defs>
-              <linearGradient id="score-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#8833ff" />
-                <stop offset="100%" stopColor="#3388ff" />
+              <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#10b981" />
+                <stop offset="100%" stopColor="#059669" />
               </linearGradient>
             </defs>
             <circle className="match-ring-bg" cx="27" cy="27" r="25" />
@@ -60,10 +79,11 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
               cx="27"
               cy="27"
               r="25"
+              stroke={`url(#${gradientId})`}
               style={{ strokeDashoffset: offset }}
             />
           </svg>
-          <span className="match-score-text">{Math.round(relevanceScore * 100)}</span>
+          <span className="match-score-text">{Math.round(relevanceScore * 100)}%</span>
         </div>
       )}
 
@@ -71,7 +91,9 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
         <div className="card-image-container">
           {opportunity.image_url && !imageError ? (
             <img
-              src={opportunity.image_url}
+              src={useLocalProxy
+                ? `/api/opportunities/proxy-image?url=${encodeURIComponent(opportunity.image_url)}`
+                : opportunity.image_url}
               alt={opportunity.title}
               className="card-image"
               onError={handleImageError}
@@ -88,13 +110,22 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
         <span className="type-badge">{opportunity.type.replace('_', ' ')}</span>
         <div className="card-header-badges">
           {opportunity.source_registration_count > 0 && (
-            <span className="global-badge" title="Registered on Source Site">🌐 {opportunity.source_registration_count.toLocaleString()}</span>
+            <span className="global-badge flex items-center gap-1" title="Registered on Source Site">
+              <PremiumIcon name="scroll" size={10} color="#fff" />
+              {opportunity.source_registration_count.toLocaleString()}
+            </span>
           )}
           {opportunity.participant_count > 0 && (
-            <span className="participant-badge" title="Active Participants">🎯 {opportunity.participant_count}</span>
+            <span className="participant-badge flex items-center gap-1" title="Active Participants">
+              <PremiumIcon name="target" size={10} />
+              {opportunity.participant_count}
+            </span>
           )}
           {opportunity.tracked_count > 0 && (
-            <span className="tracked-badge" title="Saves">🔥 {opportunity.tracked_count}</span>
+            <span className="tracked-badge flex items-center gap-1" title="Saves">
+              <PremiumIcon name="sprint" size={10} />
+              {opportunity.tracked_count}
+            </span>
           )}
         </div>
       </div>
@@ -129,15 +160,10 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
         </div>
       )}
 
-      <a
-        href={opportunity.application_link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="explore-button"
-        onClick={(e) => e.stopPropagation()}
-      >
-        Explore & Register 🚀
-      </a>
+      <div className="card-cta flex items-center justify-center gap-2">
+        <span className="register-text">Explore & Register</span>
+        <PremiumIcon name="rocket" size={14} />
+      </div>
 
       {onRemove && (
         <button onClick={(e) => { e.stopPropagation(); onRemove(opportunity.id); }} className="remove-button">
@@ -146,4 +172,6 @@ export default function OpportunityCard({ opportunity, relevanceScore, onRemove 
       )}
     </div>
   );
-}
+});
+
+export default OpportunityCard;

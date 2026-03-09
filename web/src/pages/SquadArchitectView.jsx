@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { teamsAPI } from '../services/api';
 import GridBackground from '../components/GridBackground';
 import GlassSurface from '../components/GlassSurface';
+import PremiumIcon from '../components/PremiumIcon';
 import PixelLogo from '../components/PixelLogo';
 import './Pages.css';
 
@@ -59,9 +60,6 @@ export default function SquadArchitectView() {
     return (
         <div className="detail-page pb-20">
             <GridBackground />
-            <div className="page-logo-watermark">
-                <PixelLogo />
-            </div>
 
             <div className="detail-content">
                 <div className="mb-10 text-center animate-in">
@@ -77,8 +75,9 @@ export default function SquadArchitectView() {
                     {/* Left: Roles & Skeleton */}
                     <div className="lg:col-span-1 space-y-6 animate-in" style={{ animationDelay: '0.1s' }}>
                         <GlassSurface className="p-6" borderRadius={20} backgroundOpacity={0.05}>
-                            <h3 className="text-blue-400 font-bold mb-6 flex items-center gap-2">
-                                <span>👥</span> ROLE DEPLOYMENT
+                            <h3 className="text-blue-400 font-bold mb-6 flex items-center gap-3">
+                                <PremiumIcon name="users" size={18} />
+                                ROLE DEPLOYMENT
                             </h3>
                             <div className="space-y-4">
                                 {Object.entries(blueprint.role_assignments).map(([name, role]) => (
@@ -91,8 +90,9 @@ export default function SquadArchitectView() {
                         </GlassSurface>
 
                         <GlassSurface className="p-6" borderRadius={20} backgroundOpacity={0.05}>
-                            <h3 className="text-purple-400 font-bold mb-6 flex items-center gap-2">
-                                <span>🏗️</span> PROJECT SKELETON
+                            <h3 className="text-purple-400 font-bold mb-6 flex items-center gap-3">
+                                <PremiumIcon name="building" size={18} />
+                                PROJECT SKELETON
                             </h3>
                             <div className="prose prose-invert prose-sm">
                                 <pre className="bg-black/40 p-4 rounded-xl text-purple-200 border border-purple-500/10 overflow-x-auto whitespace-pre-wrap">
@@ -105,8 +105,9 @@ export default function SquadArchitectView() {
                     {/* Right: Roadmap Timeline */}
                     <div className="lg:col-span-2 animate-in" style={{ animationDelay: '0.2s' }}>
                         <GlassSurface className="p-8" borderRadius={24} backgroundOpacity={0.08}>
-                            <h3 className="text-green-400 font-bold mb-10 text-xl flex items-center gap-3">
-                                <span className="text-2xl">🔥</span> THE 48-HOUR SPRINT
+                            <h3 className="text-green-400 font-bold mb-10 text-xl flex items-center gap-4">
+                                <PremiumIcon name="sprint" size={24} />
+                                THE 48-HOUR SPRINT
                             </h3>
                             <div className="space-y-12 relative">
                                 {/* Vertical line */}

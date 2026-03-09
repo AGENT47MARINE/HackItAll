@@ -72,6 +72,7 @@ class RecommendationResponse(BaseModel):
     """Response model for recommendations."""
     opportunity: OpportunityResponse
     relevance_score: float
+    match_reasons: List[str] = []
 
 
 class SkillGapAnalysisResponse(BaseModel):
@@ -146,6 +147,50 @@ async def search_opportunities(
     return [OpportunityResponse(**opp) for opp in opportunities]
 
 
+@router.get("/opportunities/proxy-image")
+async def proxy_image(url: str):
+    """Proxy external images to bypass browser-level network issues or CORS blocks."""
+    import httpx
+    from fastapi import Response
+    
+    # 1. Clean URL - handle potential double encoding or leading spaces
+    target_url = url.strip()
+    if not target_url.startswith("http"):
+        return Response(status_code=400, content="Invalid URL scheme")
+
+    async with httpx.AsyncClient(verify=False, follow_redirects=True, timeout=15.0) as client:
+        try:
+            # Browser-like headers
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+                "Referer": "https://unstop.com/" # Often helps bypass blocks
+            }
+            
+            resp = await client.get(target_url, headers=headers)
+            
+            if resp.status_code == 200:
+                return Response(
+                    content=resp.content, 
+                    media_type=resp.headers.get("content-type", "image/jpeg"),
+                    headers={
+                        "Cache-Control": "public, max-age=86400",
+                        "Access-Control-Allow-Origin": "*"
+                    }
+                )
+            
+            # If 404 or other error, return it instead of throwing exception
+            logger.warning(f"Image Proxy: Remote server returned {resp.status_code} for {target_url}")
+            return Response(status_code=resp.status_code, content=f"Remote server returned {resp.status_code}")
+
+        except httpx.TimeoutException:
+            logger.error(f"Image Proxy Timeout: {target_url}")
+            raise HTTPException(status_code=504, detail="Upstream request timed out")
+        except Exception as e:
+            logger.error(f"Image Proxy Exception: {str(e)}")
+            # Fallback for generic errors
+            return Response(status_code=500, content=f"Proxy error: {str(e)}")
+
 @router.get("/opportunities/search/semantic", response_model=List[OpportunityResponse])
 async def semantic_search_opportunities(
     q: str = Query(..., description="Natural language search query"),
@@ -167,7 +212,7 @@ async def semantic_search_opportunities(
 
 @router.get("/opportunities/trending", response_model=List[OpportunityResponse])
 async def get_trending_opportunities(
-    limit: int = Query(default=5, ge=1, le=20, description="Maximum number of trending opportunities to return"),
+    limit: int = Query(default=10, ge=1, le=50, description="Maximum number of trending opportunities to return"),
     db: Session = Depends(get_db)
 ):
     """Get trending opportunities based on tracking activity.
@@ -327,17 +372,46 @@ async def get_recommendations(
     
     # Format response
     recommendations = []
+    import json as _json
+    from models.user import Profile as _Profile
+    profile = db.query(_Profile).filter(_Profile.user_id == current_user_id).first()
+    user_interests = set()
+    user_skills = set()
+    if profile:
+        try:
+            user_interests = set(i.strip().lower() for i in (_json.loads(profile.interests) if isinstance(profile.interests, str) else []))
+            user_skills = set(s.strip().lower() for s in (_json.loads(profile.skills) if isinstance(profile.skills, str) else []))
+        except Exception:
+            pass
+
     for opportunity, score in scored_opportunities:
         opportunity_service = OpportunityService(db)
         opportunity_data = opportunity_service._format_opportunity_response(opportunity)
-        
+
+        # Generate human-readable match reasons
+        reasons = []
+        try:
+            opp_tags = set(t.strip().lower() for t in (_json.loads(opportunity.tags) if isinstance(opportunity.tags, str) else []))
+            opp_skills = set(s.strip().lower() for s in (_json.loads(opportunity.required_skills) if isinstance(opportunity.required_skills, str) else []))
+            matching_interests = list(user_interests.intersection(opp_tags))[:2]
+            matching_skills = list(user_skills.intersection(opp_skills | opp_tags))[:2]
+            if matching_skills:
+                reasons.append(f"Matches your skills: {', '.join(s.title() for s in matching_skills)}")
+            if matching_interests:
+                reasons.append(f"Aligns with your interests: {', '.join(i.title() for i in matching_interests)}")
+            if not reasons and score > 0.3:
+                reasons.append("Recommended based on your profile")
+        except Exception:
+            reasons = ["Personalized recommendation"]
+
         recommendations.append(
             RecommendationResponse(
                 opportunity=OpportunityResponse(**opportunity_data),
-                relevance_score=round(score, 3)
+                relevance_score=round(score, 3),
+                match_reasons=reasons
             )
         )
-    
+
     return recommendations
 
 
@@ -538,19 +612,26 @@ async def batch_scrape(
     """
     from services.scraper.unstop_spider import UnstopSpider
     from services.scraper.devpost_spider import DevpostSpider
+    from services.scraper.hacker_earth_spider import HackerEarthSpider
     from models.opportunity import Opportunity
 
     errors = []
     all_scraped = []
     sources_used = []
 
-    # Run Unstop spider (top 30 only to keep storage lean)
+    # Run Unstop spider (diverse categories)
     try:
         unstop = UnstopSpider()
-        unstop_results = unstop.scrape(max_results=30)
-        all_scraped.extend(unstop_results)
-        if unstop_results:
-            sources_used.append("unstop.com")
+        # Hackathons
+        all_scraped.extend(unstop.scrape(max_results=20, opportunity_type="hackathons"))
+        # Scholarships
+        all_scraped.extend(unstop.scrape(max_results=10, opportunity_type="scholarships"))
+        # Internships
+        all_scraped.extend(unstop.scrape(max_results=10, opportunity_type="internships"))
+        # Skill Programs (Workshops)
+        all_scraped.extend(unstop.scrape(max_results=10, opportunity_type="workshops"))
+        
+        sources_used.append("unstop.com")
     except Exception as e:
         errors.append(f"Unstop spider failed: {str(e)}")
 
@@ -564,27 +645,38 @@ async def batch_scrape(
     except Exception as e:
         errors.append(f"Devpost spider failed: {str(e)}")
 
+    # Run HackerEarth spider
+    try:
+        hackerearth = HackerEarthSpider()
+        he_results = hackerearth.scrape(max_results=5)
+        all_scraped.extend(he_results)
+        if he_results:
+            sources_used.append("hackerearth.com")
+    except Exception as e:
+        errors.append(f"HackerEarth spider failed: {str(e)}")
+
     # Deduplicate and insert
     new_count = 0
     skipped_count = 0
 
+    scraped_urls = [item.get("source_url") for item in all_scraped if item.get("source_url")]
+    existing_urls = set()
+    if scraped_urls:
+        existing_urls = {
+            url for (url,) in db.query(Opportunity.source_url).filter(
+                Opportunity.source_url.in_(scraped_urls)
+            ).all()
+        }
+
     for item in all_scraped:
         source_url = item.get("source_url", "")
 
-        if not source_url:
-            skipped_count += 1
-            continue
-
-        # Check if already exists
-        existing = db.query(Opportunity).filter(
-            Opportunity.source_url == source_url
-        ).first()
-
-        if existing:
+        if not source_url or source_url in existing_urls:
             skipped_count += 1
             continue
 
         try:
+            import json
             opp = Opportunity(
                 title=item.get("title", "Unknown"),
                 description=item.get("description", "Scraped opportunity"),
@@ -600,10 +692,13 @@ async def batch_scrape(
                 timeline=json.dumps(item.get("timeline", [])),
                 prizes=json.dumps(item.get("prizes", [])),
                 source_url=source_url,
+                source_registration_count=item.get("source_registration_count", 0),
                 status="active",
+                created_at=datetime.utcnow()
             )
             db.add(opp)
             new_count += 1
+            existing_urls.add(source_url)  # Prevent duplicates within the same batch
         except Exception as e:
             errors.append(f"Failed to insert '{item.get('title', '?')}': {str(e)}")
 

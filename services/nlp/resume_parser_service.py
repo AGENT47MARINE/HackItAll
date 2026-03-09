@@ -3,6 +3,7 @@ import os
 from typing import Dict, Any, List, Optional
 import json
 from pypdf import PdfReader
+from utils.tags import extract_tech_skills, extract_interests
 import io
 
 from services.nlp.extractors import LLMExtractor, LocalLLMExtractor
@@ -34,6 +35,7 @@ class ResumeParserService:
                 text += page.extract_text() + "\n"
             return text.strip()
         except Exception as e:
+            print(f"[ResumeParserService] text extraction failed: {e}")
             raise ValueError(f"Failed to extract text from PDF: {str(e)}")
 
     def parse_resume(self, text: str) -> Dict[str, Any]:
@@ -66,18 +68,36 @@ class ResumeParserService:
         
         try:
             result = self.extractor.generic_extract(prompt)
+            print(f"[ResumeParserService] LLM result: {result}")
             
-            if not result:
-                return {"skills": [], "interests": [], "education_level": "Undergraduate"}
+            # If LLM fails or returns empty, use keyword fallback
+            if not result or (not result.get("skills") and not result.get("interests")):
+                print("[ResumeParserService] LLM returned no data. Using keyword fallback.")
+                fallback_skills = extract_tech_skills(truncated_text)
+                fallback_interests = extract_interests(truncated_text)
+                return {
+                    "skills": fallback_skills,
+                    "interests": fallback_interests,
+                    "education_level": "Undergraduate",
+                    "raw_text": truncated_text
+                }
                 
             return {
                 "skills": result.get("skills", []),
                 "interests": result.get("interests", []),
-                "education_level": result.get("education_level", "Undergraduate")
+                "education_level": result.get("education_level", "Undergraduate"),
+                "raw_text": truncated_text
             }
         except Exception as e:
-            print(f"Resume parsing error: {e}")
-            return {"skills": [], "interests": [], "education_level": "Undergraduate"}
+            print(f"Resume parsing error: {e}. Using keyword fallback.")
+            fallback_skills = extract_tech_skills(truncated_text)
+            fallback_interests = extract_interests(truncated_text)
+            return {
+                "skills": fallback_skills, 
+                "interests": fallback_interests, 
+                "education_level": "Undergraduate",
+                "raw_text": truncated_text
+            }
 
     def get_structured_profile(self, pdf_content: bytes) -> Dict[str, Any]:
         """Full pipeline: Extract text and parse into structured data.
@@ -89,4 +109,5 @@ class ResumeParserService:
             Structured profile dictionary
         """
         text = self.extract_text_from_pdf(pdf_content)
+        print(f"[ResumeParserService] Extracted {len(text)} characters from PDF.")
         return self.parse_resume(text)

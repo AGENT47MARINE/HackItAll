@@ -311,7 +311,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   gap: 1.5rem;
-  animation: fadeInUp 0.8s ease 0.4s both;
+  /* Removed translateY animation — causes layout thrashing during scroll */
+  animation: fadeInSimple 0.3s ease both;
 }
 
 /* Animations */
@@ -327,33 +328,43 @@
   }
 }
 
+/* Fast opacity-only fade — GPU-free, does not trigger layout or compositing */
+@keyframes fadeInSimple {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes pulse {
 
   0%,
   100% {
     opacity: 0.3;
-    transform: scale(1);
   }
 
   50% {
     opacity: 0.6;
-    transform: scale(1.05);
   }
+
+  /* Removed scale(1.05) — infinite scale causes constant compositing reflows */
 }
 
 .animate-in {
-  animation: animateIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+  /* Opacity-only: no scale/translateY so no per-card compositing layer forced */
+  animation: fadeInSimple 0.35s ease both;
 }
 
 @keyframes animateIn {
   from {
     opacity: 0;
-    transform: translateY(30px) scale(0.98);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 

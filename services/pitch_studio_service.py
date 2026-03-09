@@ -51,30 +51,36 @@ class PitchStudioService:
 
     def _generate_assets_via_llm(self, context: Dict) -> Dict:
         """Use AI to craft the perfect pitch assets."""
-        # Simulated high-quality AI output
-        elevator_pitch = f"Hi, we're {context['team_name']}. We saw that judges here value {context['winning_criteria']}, so we built {context['project_focus']}. Using {context['tech_stack']}, we've solved the core bottleneck by focusing on {context['strategic_advice']}."
+        prompt = f"""
+        Craft a world-class hackathon pitch for the team '{context['team_name']}'.
+        They are building: {context['project_focus']}
+        Tech Stack: {context['tech_stack']}
+        Strategic Advice from Scouts: {context['strategic_advice']}
         
-        demo_script = f"""
-        [Start Demo - 0:00]
-        - Intro: Start with the problem. 'Did you know that...'
-        - Solution: 'That's why we built this app.'
-        [Feature Walkthrough - 0:45]
-        - Focus on the technical implementation of our AI logic.
-        [The 'Aha' Moment - 2:00]
-        - Show how we incorporated the judge's favorite features.
-        [Closing - 2:45]
-        - Reiterate scalability and future impact.
+        JUDGING CRITERIA:
+        {context['winning_criteria']}
+        
+        TASK:
+        1. elevator_pitch (ONE POWERFUL SENTENCE)
+        2. demo_script (3-minute minute-by-minute workflow)
+        3. slide_blueprint (List of objects with 'title', 'content', 'visual_tip')
+        
+        Ensure the script highlights the 'Aha!' moment using judge persona preferences.
+        Return ONLY valid JSON.
         """
+        
+        try:
+            result = self.extractor.generic_extract(prompt)
+            if result and "elevator_pitch" in result:
+                return result
+        except Exception as e:
+            print(f"LLM Pitch Generation failed: {e}")
 
-        slide_blueprint = [
-            {"title": "The Hook", "content": "Visualizing the massive inefficiency we are solving.", "visual_tip": "Use a dramatic, low-poly chart showing 40% loss."},
-            {"title": "Our Secret Sauce", "content": "How our architecture uses the sponsor's API in a novel way.", "visual_tip": "High-level architecture diagram with blinking 'AI' nodes."},
-            {"title": "Live Demo Highlights", "content": "Screen recording of the vector search in action.", "visual_tip": "Full-screen cinematic video clips."},
-            {"title": "The Team & Future", "content": "Why we are the ones to execute this.", "visual_tip": "Clean grid of team photos and a roadmap icon."}
-        ]
-
+        # Fallback to high-quality template strategy if LLM is offline
         return {
-            "elevator_pitch": elevator_pitch,
-            "demo_script": demo_script,
-            "slide_blueprint": slide_blueprint
+            "elevator_pitch": f"We're {context['team_name']}, leveraging {context['tech_stack']} to build {context['project_focus']}. We solve the core judge concern about {context['winning_criteria']} by implementing a focus on {context['strategic_advice']}.",
+            "demo_script": "[Start: 0:00] Problem statement. [Core Feature: 1:00] Live demo of the main value. [Tech Highlight: 2:00] Showcase our tech stack. [Closing: 2:45] Impact and future.",
+            "slide_blueprint": [
+                {"title": "The Big One", "content": "Visualizing the solution in action.", "visual_tip": "Cinematic video reel."}
+            ]
         }

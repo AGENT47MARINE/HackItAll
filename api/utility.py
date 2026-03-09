@@ -115,6 +115,40 @@ async def get_preferences(
         )
 
 
+@router.get("/notifications")
+async def get_notifications(
+    current_user_id: str = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get recent notifications (reminders) for the user."""
+    try:
+        from models.opportunity import Opportunity
+        
+        # Get reminders joined with opportunity titles
+        reminders = db.query(Reminder, Opportunity.title).join(
+            Opportunity, Reminder.opportunity_id == Opportunity.id
+        ).filter(
+            Reminder.user_id == current_user_id
+        ).order_by(Reminder.scheduled_time.desc()).limit(10).all()
+        
+        return [
+            {
+                "id": reminder.id,
+                "opportunity_id": reminder.opportunity_id,
+                "opportunity_title": title,
+                "scheduled_time": reminder.scheduled_time.isoformat(),
+                "sent": reminder.sent,
+                "type": "deadline_reminder"
+            }
+            for reminder, title in reminders
+        ]
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get notifications: {str(e)}"
+        )
+
+
 @router.get("/export")
 async def export_user_data(
     current_user_id: str = Depends(get_current_user),

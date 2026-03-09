@@ -12,7 +12,10 @@ class Config:
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./opportunity_platform.db")
     
     # Security (kept for backward compatibility with password hashing)
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    if not SECRET_KEY and os.getenv("ENV") == "production":
+        raise ValueError("SECRET_KEY must be set in production environment")
+    SECRET_KEY = SECRET_KEY or "dev-secret-key-change-in-production"
     
     # Notification Services
     SMTP_HOST = os.getenv("SMTP_HOST", "")

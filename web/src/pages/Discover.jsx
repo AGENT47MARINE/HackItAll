@@ -1,10 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { opportunitiesAPI } from '../services/api';
 import OpportunityCard from '../components/OpportunityCard';
+import PremiumIcon from '../components/PremiumIcon';
 import GridBackground from '../components/GridBackground';
-import GlassSurface from '../components/GlassSurface';
 import './Pages.css';
+
+// Memoized wrapper so cards don't re-render when parent state changes
+const RecommendationCard = memo(({ rec, index }) => {
+    const opp = rec.opportunity || rec;
+    const score = rec.relevance_score;
+    const reasons = rec.match_reasons || [];
+
+    return (
+        <div
+            className="animate-in"
+            style={{
+                animationDelay: `${index * 80}ms`,
+                display: 'flex',
+                flexDirection: 'column',
+                cursor: 'pointer',
+                position: 'relative',
+                gap: '0.5rem',
+            }}
+            onClick={() => window.location.href = `/opportunities/${opp.id}`}
+        >
+
+            <OpportunityCard
+                opportunity={opp}
+                relevanceScore={score}
+            />
+            {reasons.length > 0 && (
+                <div style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.4rem',
+                    paddingLeft: '0.5rem',
+                    paddingBottom: '0.25rem'
+                }}>
+                    {reasons.map((reason, ri) => (
+                        <span key={ri} style={{
+                            fontSize: '0.6rem',
+                            fontWeight: 700,
+                            color: 'rgba(255,255,255,0.35)',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.07)',
+                            borderRadius: '100px',
+                            padding: '0.15rem 0.6rem',
+                        }}>
+                            ✦ {reason}
+                        </span>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+});
+RecommendationCard.displayName = 'RecommendationCard';
 
 export default function Discover() {
     const { isSignedIn } = useAuth();
@@ -14,29 +66,35 @@ export default function Discover() {
     const [recLoading, setRecLoading] = useState(false);
 
     useEffect(() => {
-        const fetchAll = async () => {
+        const fetchTrending = async () => {
             setLoading(true);
             try {
-                // Always fetch trending
                 const trendingData = await opportunitiesAPI.getTrending();
                 setTrending(trendingData);
-
-                // If user is authenticated, fetch their personalized AI recommendations
-                if (isSignedIn) {
-                    setRecLoading(true);
-                    const recData = await opportunitiesAPI.getRecommendations();
-                    // Store the full recommendation object to get the score
-                    setRecommendations(recData);
-                    setRecLoading(false);
-                }
             } catch (error) {
-                console.error('Error fetching discover feed:', error);
-                setRecLoading(false);
+                console.error('Error fetching trending:', error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchAll();
+
+        const fetchRecommendations = async () => {
+            if (!isSignedIn) return;
+            setRecLoading(true);
+            try {
+                const recData = await opportunitiesAPI.getRecommendations();
+                console.log('[ForYou] Raw recommendations response:', recData);
+                setRecommendations(Array.isArray(recData) ? recData : []);
+            } catch (error) {
+                console.error('[ForYou] Error fetching recommendations:', error?.response?.data || error);
+                setRecommendations([]);
+            } finally {
+                setRecLoading(false);
+            }
+        };
+
+        fetchTrending();
+        fetchRecommendations();
     }, [isSignedIn]);
 
     return (
@@ -49,8 +107,9 @@ export default function Discover() {
                 {isSignedIn && (
                     <div className="mb-24">
                         <div className="opportunities-header">
-                            <h1 className="opportunities-title">
-                                For <span className="gradient-text">You 🎯</span>
+                            <h1 className="opportunities-title flex items-center gap-3">
+                                For <span className="gradient-text">You</span>
+                                <PremiumIcon name="target" size={24} />
                             </h1>
                             <p className="opportunities-subtitle">
                                 Personalized matches based on your education and interests.
@@ -63,50 +122,34 @@ export default function Discover() {
                                 <p>Analyzing your profile...</p>
                             </div>
                         ) : recommendations.length === 0 ? (
-                            <div className="empty-state-modern">
-                                <p>No personalized matches found right now. Check back later!</p>
+                            <div style={{ minHeight: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', border: '1px dashed rgba(255,255,255,0.07)', borderRadius: '20px', padding: '3rem' }}>
+                                <PremiumIcon name="target" size={40} />
+                                <p style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 600, textAlign: 'center' }}>No personalized matches yet. Complete your profile to unlock AI recommendations!</p>
                             </div>
                         ) : (
-                            <GlassSurface
-                                width="100%"
-                                height="auto"
-                                borderRadius={24}
-                                backgroundOpacity={0.02}
-                                opacity={0.6}
-                                blur={20}
-                                className="p-8"
-                            >
+                            <div style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                borderRadius: '24px',
+                                padding: '2rem',
+                            }}>
                                 <div className="opportunities-grid-modern">
                                     {recommendations.map((rec, index) => (
-                                        <div
-                                            key={rec.opportunity.id}
-                                            className="animate-in"
-                                            style={{
-                                                animationDelay: `${index * 150}ms`,
-                                                display: 'block',
-                                                textDecoration: 'none',
-                                                color: 'inherit',
-                                                cursor: 'pointer'
-                                            }}
-                                            onClick={() => window.location.href = `/opportunities/${rec.opportunity.id}`}
-                                        >
-                                            <OpportunityCard
-                                                opportunity={rec.opportunity}
-                                                relevanceScore={rec.relevance_score}
-                                            />
-                                        </div>
+                                        <RecommendationCard key={(rec.opportunity || rec).id} rec={rec} index={index} />
                                     ))}
                                 </div>
-                            </GlassSurface>
+                            </div>
                         )}
+
                         <div className="my-12 w-full h-px bg-white/10" />
                     </div>
                 )}
 
                 {/* Global Trending Section */}
                 <div className="opportunities-header">
-                    <h1 className="opportunities-title">
-                        Trending <span className="gradient-text">Now 🔥</span>
+                    <h1 className="opportunities-title flex items-center gap-3">
+                        Trending <span className="gradient-text">Now</span>
+                        <PremiumIcon name="sprint" size={24} />
                     </h1>
                     <p className="opportunities-subtitle">
                         Opportunities with the highest engagement and active participants in the HackItAll community.

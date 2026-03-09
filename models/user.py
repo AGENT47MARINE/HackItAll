@@ -1,7 +1,6 @@
 """User and Profile database models."""
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, ARRAY, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -52,6 +51,13 @@ class Profile(Base):
     notification_sms = Column(Boolean, default=False, nullable=False)
     low_bandwidth_mode = Column(Boolean, default=False, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    
+    # Add indexes for recommendation query optimization
+    __table_args__ = (
+        Index('idx_profiles_user_id', 'user_id'),
+        Index('idx_profiles_education_level', 'education_level'),
+        Index('idx_profiles_user_education', 'user_id', 'education_level'),
+    )
     
     # Relationship to user
     user = relationship("User", back_populates="profile")

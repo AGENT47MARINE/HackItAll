@@ -14,9 +14,7 @@ export default function Opportunities() {
   const types = ['hackathon', 'scholarship', 'internship', 'skill_program'];
 
   useEffect(() => {
-    if (searchQuery || selectedType) {
-      searchOpportunities();
-    }
+    searchOpportunities();
   }, [selectedType, isAISearch]);
 
   const searchOpportunities = async () => {
@@ -28,7 +26,12 @@ export default function Opportunities() {
       } else {
         const params = {};
         if (searchQuery) params.search = searchQuery;
-        if (selectedType) params.type = [selectedType];
+        if (selectedType) {
+          // FastAPI expects multiple values for the same key for Lists
+          // and axios handles arrays by default as type[]=val, but FastAPI might want type=val
+          // We'll use URLSearchParams for better control or just pass it directly if axios is configured
+          params.type = selectedType;
+        }
         const data = await opportunitiesAPI.search(params);
         setOpportunities(data);
       }

@@ -112,5 +112,7 @@ class CompetitiveScoutService:
         return ScoutAnalysis(
             opportunity_id=opportunity.id,
             winning_criteria="General hackathon standards: Innovation, Technical Implementation, and Pitch quality.",
+            suggested_tech_stack=[],
+            track_difficulty={},
             strategic_advice="Research the judges on LinkedIn to understand their professional background—tailor your pitch to their interests."
         )

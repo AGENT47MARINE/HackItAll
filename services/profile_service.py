@@ -1,6 +1,5 @@
 """Profile service for user profile management."""
 import json
-import bcrypt
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -218,6 +217,15 @@ class ProfileService:
             profile.low_bandwidth_mode = low_bandwidth_mode
         
         self.db.commit()
+        
+        # Invalidate recommendation cache when profile changes
+        try:
+            from services.recommendation_service import RecommendationEngine
+            engine = RecommendationEngine(self.db)
+            engine.invalidate_user_cache(user_id)
+        except Exception as e:
+            # Don't fail the profile update if cache invalidation fails
+            print(f"Warning: Failed to invalidate recommendation cache for user {user_id}: {e}")
         
         return self._format_profile_response(user, profile)
     
@@ -472,15 +480,69 @@ class ProfileService:
             resume_content: Binary content of the PDF resume
             
         Returns:
-            Dictionary containing updated profile data
+            Dictionary containing updated profile data and extraction metadata
         """
         parser = ResumeParserService()
         structured_data = parser.get_structured_profile(resume_content)
         
-        # Overlay the extracted data onto the existing profile
-        return self.update_profile(
+        # Get existing profile to merge manually
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            # Should not happen if Clerk sync is working, but safety first
+            print(f"[ProfileService] User {user_id} not found during resume sync.")
+            return None
+            
+        if not user.profile:
+             # Create empty profile if missing
+             self.create_profile(user_id, user.email, "Undergraduate")
+             self.db.refresh(user)
+
+        existing_profile = user.profile
+        existing_skills = json.loads(existing_profile.skills) if existing_profile.skills else []
+        existing_interests = json.loads(existing_profile.interests) if existing_profile.interests else []
+
+        # Merge Skills (Case-insensitive deduplication)
+        new_skills = structured_data.get("skills", [])
+        if not isinstance(new_skills, list):
+             new_skills = []
+             
+        merged_skills = list(existing_skills)
+        existing_skills_lower = [s.lower() for s in merged_skills]
+        
+        for skill in new_skills:
+            if skill.lower() not in existing_skills_lower:
+                merged_skills.append(skill)
+                
+        # Merge Interests
+        new_interests = structured_data.get("interests", [])
+        if not isinstance(new_interests, list):
+             new_interests = []
+             
+        merged_interests = list(existing_interests)
+        existing_interests_lower = [i.lower() for i in merged_interests]
+        
+        for interest in new_interests:
+            if interest.lower() not in existing_interests_lower:
+                merged_interests.append(interest)
+        
+        # Update the profile
+        updated_data = self.update_profile(
             user_id=user_id,
-            interests=structured_data.get("interests"),
-            skills=structured_data.get("skills"),
-            education_level=structured_data.get("education_level")
+            interests=merged_interests,
+            skills=merged_skills,
+            education_level=structured_data.get("education_level") or existing_profile.education_level
         )
+        
+        if not updated_data:
+            return None
+            
+        # Add metadata for the API response
+        updated_data["extracted_skills"] = new_skills
+        updated_data["extracted_interests"] = new_interests
+        updated_data["raw_text"] = structured_data.get("raw_text", "")
+        updated_data["new_skills_count"] = len(merged_skills) - len(existing_skills)
+        updated_data["new_interests_count"] = len(merged_interests) - len(existing_interests)
+        
+        print(f"[ProfileService] Resume sync for {user_id}: Extracted {len(new_skills)} skills.")
+        
+        return updated_data

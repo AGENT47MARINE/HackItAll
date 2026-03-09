@@ -9,11 +9,11 @@ from database import get_db
 class AuthenticationError(Exception):
     """Exception raised for authentication errors."""
     pass
-from services.profile_service import ProfileService, ValidationError
+from services.profile_service import ProfileService
 
 
 # Security scheme
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 # Router
 router = APIRouter(prefix="/api/auth", tags=["authentication"])
@@ -73,6 +73,8 @@ class UserResponse(BaseModel):
 
 import os
 from clerk_backend_api import Clerk
+import jwt
+from jwt import PyJWKClient
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
     """Validate Clerk JWT token and return user ID.
@@ -86,6 +88,13 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     Raises:
         HTTPException: If token is missing, invalid, or expired
     """
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
     token = credentials.credentials
     
     clerk_secret = os.getenv("CLERK_SECRET_KEY")
@@ -96,27 +105,37 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         )
         
     try:
-        clerk = Clerk(bearer_auth=clerk_secret)
-        # Verify the token natively using Clerk's SDK
-        # This checks the signature, expiration, and issuer automatically
-        token_payload = clerk.authenticate_request(
-            request=None, # SDK supports passing raw request, but we have the raw JWT string
-            header_token=token
+        # Decode the JWT token without verification first to get the issuer
+        unverified_payload = jwt.decode(token, options={"verify_signature": False})
+        
+        # Get the issuer (Clerk domain)
+        issuer = unverified_payload.get("iss")
+        if not issuer:
+            raise AuthenticationError("Token missing issuer")
+        
+        # Construct JWKS URL from issuer
+        jwks_url = f"{issuer}/.well-known/jwks.json"
+        
+        # Get the signing key from Clerk's JWKS endpoint
+        jwks_client = PyJWKClient(jwks_url)
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        
+        # Verify and decode the token
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            options={"verify_signature": True, "verify_exp": True}
         )
         
-        if not token_payload.is_signed_in or not token_payload.payload:
-             raise AuthenticationError("Invalid or expired session")
-             
         # Extract the user ID from the verified token
-        # In Clerk, 'sub' is the unique user ID string
-        user_id = token_payload.payload.get("sub")
-        email = token_payload.payload.get("email") # Check if email is in payload
+        user_id = payload.get("sub")
+        email = payload.get("email")
         
         if not user_id:
-             raise AuthenticationError("Token payload missing user identifier")
+            raise AuthenticationError("Token payload missing user identifier")
 
         # Lazy init: Ensure user exists in our local DB
-        # This solves the issue of webhooks not being reachable on localhost
         from models.user import User, Profile
         from services.profile_service import ProfileService
         
@@ -124,19 +143,19 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         try:
             existing_user = db.query(User).filter(User.id == user_id).first()
             if not existing_user:
-                # If we don't have the email from the token, we can try to get it from Clerk API
+                # If we don't have the email from the token, fetch from Clerk API
                 if not email:
                     try:
+                        clerk = Clerk(bearer_auth=clerk_secret)
                         user_obj = clerk.users.get(user_id=user_id)
                         email = user_obj.email_addresses[0].email_address if user_obj.email_addresses else None
                     except:
                         email = f"user_{user_id[:8]}@temporary.com"
                 
-                # Extract username or handle from Clerk
-                clerk_username = token_payload.payload.get("username")
+                # Extract username from token or email
+                clerk_username = payload.get("username") or payload.get("name")
                 if not clerk_username:
-                     # Fallback to email prefix or random string
-                     clerk_username = email.split('@')[0] if email else f"user_{user_id[:8]}"
+                    clerk_username = email.split('@')[0] if email else f"user_{user_id[:8]}"
                 
                 profile_service = ProfileService(db)
                 profile_service.create_profile(
@@ -160,10 +179,22 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
              
         return user_id
         
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except jwt.InvalidTokenError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid token: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail=f"Could not validate credentials: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

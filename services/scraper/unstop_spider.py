@@ -10,6 +10,7 @@ from typing import List, Dict, Any
 import json
 import re
 import time
+from utils.tags import clean_tags, extract_tech_skills
 
 
 class UnstopSpider:
@@ -56,7 +57,13 @@ class UnstopSpider:
                 opportunities = data.get("data", {}).get("data", [])
 
                 for opp in opportunities[:max_results]:
-                    parsed = self._parse_opportunity(opp)
+                    # Map Unstop types to our internal types
+                    our_type = "hackathon"
+                    if opportunity_type == "scholarships": our_type = "scholarship"
+                    elif opportunity_type == "internships": our_type = "internship"
+                    elif opportunity_type == "workshops": our_type = "skill_program"
+                    
+                    parsed = self._parse_opportunity(opp, our_type)
                     if parsed:
                         results.append(parsed)
                 
@@ -77,11 +84,12 @@ class UnstopSpider:
         print(f"[UnstopSpider] Scraped {len(results)} hackathons from Unstop")
         return results
 
-    def _parse_opportunity(self, opp: dict) -> Dict[str, Any] | None:
+    def _parse_opportunity(self, opp: dict, opp_type: str = "hackathon") -> Dict[str, Any] | None:
         """Parse a single opportunity from the Unstop API response.
 
         Args:
             opp: Raw opportunity dict from API.
+            opp_type: Our internal type.
 
         Returns:
             Parsed dict matching Opportunity schema, or None if invalid.
@@ -115,8 +123,22 @@ class UnstopSpider:
 
             if not tags:
                 tags = ["Hackathon"]
-
-            # Build the source URL
+                
+            # Clean tags and update eligibility
+            # The title and description often contain clues too
+            meta_text = f"{title} {opp.get('short_desc', '')} {opp.get('description', '')}"
+            tech_skills = extract_tech_skills(meta_text)
+            
+            orig_eligibility = opp.get("eligibility", "Open to all")
+            if isinstance(orig_eligibility, list):
+                orig_eligibility = ", ".join(orig_eligibility) if orig_eligibility else "Open to all"
+                
+            cleaned_tags, final_eligibility = clean_tags(tags, str(orig_eligibility))
+            
+            # Combine extracted tech skills back into tags if they aren't already there
+            for skill in tech_skills:
+                if skill not in cleaned_tags:
+                    cleaned_tags.append(skill)
             slug = opp.get("public_url") or opp.get("seo_url", "")
             if slug and not slug.startswith("http"):
                 source_url = f"{self.BASE_URL}/{slug}"
@@ -135,14 +157,14 @@ class UnstopSpider:
 
             return {
                 "title": title[:200],
-                "description": (opp.get("short_desc") or opp.get("description", "") or f"Hackathon on Unstop: {title}")[:1000],
-                "type": "hackathon",
+                "description": (opp.get("short_desc") or opp.get("description", "") or f"{opp_type.capitalize()} on Unstop: {title}")[:1000],
+                "type": opp_type,
                 "deadline": deadline,
                 "application_link": source_url,
                 "image_url": image_url if image_url else None,
-                "tags": json.dumps(tags[:5]),
-                "required_skills": json.dumps([]),
-                "eligibility": str(eligibility)[:50] if eligibility else "Open to all",
+                "tags": json.dumps(cleaned_tags[:8]),
+                "required_skills": json.dumps(tech_skills[:5]),
+                "eligibility": str(final_eligibility)[:100] if final_eligibility else "Open to all",
                 "location_type": location_type,
                 "location": "India" if not is_online else "Online",
                 "source_url": source_url,

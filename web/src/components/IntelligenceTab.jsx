@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { opportunitiesAPI } from '../services/api';
 import GlassSurface from './GlassSurface';
+import PremiumIcon from './PremiumIcon';
 import './OpportunityCard.css'; // Reusing some glass styles
 
 export default function IntelligenceTab({ opportunityId }) {
@@ -28,7 +29,8 @@ export default function IntelligenceTab({ opportunityId }) {
         return (
             <section className="mb-10 animate-in">
                 <div className="flex items-center gap-3 mb-6">
-                    <h3 className="text-2xl font-black text-white tracking-tight uppercase">🛡️ Intelligence Scout</h3>
+                    <PremiumIcon name="shield" size={20} />
+                    <h3 className="text-2xl font-black text-white tracking-tight uppercase">Intelligence Scout</h3>
                     <span className="bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded text-[10px] font-bold">PRO FEATURE</span>
                 </div>
                 <div className="p-8 text-center">
@@ -52,9 +54,10 @@ export default function IntelligenceTab({ opportunityId }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* Winning Criteria */}
-                <GlassSurface className="p-6" borderRadius={16} backgroundOpacity={0.05}>
-                    <h3 className="text-blue-400 font-bold mb-4 flex items-center gap-2">
-                        <span>🎯</span> Winning Proof
+                <GlassSurface width="100%" height="auto" className="p-6" borderRadius={16} backgroundOpacity={0.05}>
+                    <h3 className="text-blue-400 font-bold mb-4 flex items-center gap-3">
+                        <PremiumIcon name="target" size={18} />
+                        Winning Proof
                     </h3>
                     <p className="text-white/80 leading-relaxed italic">
                         "{scout.winning_criteria}"
@@ -62,9 +65,10 @@ export default function IntelligenceTab({ opportunityId }) {
                 </GlassSurface>
 
                 {/* Suggested Stack */}
-                <GlassSurface className="p-6" borderRadius={16} backgroundOpacity={0.05}>
-                    <h3 className="text-purple-400 font-bold mb-4 flex items-center gap-2">
-                        <span>🛠️</span> Winning Stack
+                <GlassSurface width="100%" height="auto" className="p-6" borderRadius={16} backgroundOpacity={0.05}>
+                    <h3 className="text-purple-400 font-bold mb-4 flex items-center gap-3">
+                        <PremiumIcon name="tool" size={18} />
+                        Winning Stack
                     </h3>
                     <div className="flex flex-wrap gap-2">
                         {scout.suggested_tech_stack.map(tech => (
@@ -81,12 +85,15 @@ export default function IntelligenceTab({ opportunityId }) {
                 {/* Strategic Alpha */}
                 <div className="md:col-span-2">
                     <GlassSurface
+                        width="100%"
+                        height="auto"
                         className="p-8 border-l-4 border-l-yellow-500"
                         borderRadius={16}
                         backgroundOpacity={0.08}
                     >
                         <h3 className="text-yellow-500 font-black text-xl mb-4 flex items-center gap-3">
-                            <span>💡</span> STRATEGIC ALPHA
+                            <PremiumIcon name="lightbulb" size={22} />
+                            STRATEGIC ALPHA
                         </h3>
                         <p className="text-white text-lg font-medium leading-relaxed">
                             {scout.strategic_advice}

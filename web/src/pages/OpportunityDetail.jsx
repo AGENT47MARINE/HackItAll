@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { opportunitiesAPI, trackingAPI } from '../services/api';
 import GridBackground from '../components/GridBackground';
+import PremiumIcon from '../components/PremiumIcon';
 import PixelLogo from '../components/PixelLogo';
 import TeamSection from '../components/TeamSection';
 import IntelligenceTab from '../components/IntelligenceTab';
@@ -132,9 +133,6 @@ export default function OpportunityDetail() {
     <div className="detail-page">
       <GridBackground />
 
-      <div className="page-logo-watermark">
-        <PixelLogo />
-      </div>
 
       <div className="detail-content">
         {/* Hero Image */}
@@ -162,8 +160,9 @@ export default function OpportunityDetail() {
           {/* Strategic AI Alpha (Only for Hackathons) */}
           {opportunity.type === 'hackathon' && (
             <div className="md:col-span-2">
-              <h2 className="detail-card-title flex items-center gap-2">
-                <span className="text-xl">🛡️</span> COMPETITIVE AI SCOUT (WINNER ALPHA)
+              <h2 className="detail-card-title flex items-center gap-3">
+                <PremiumIcon name="shield" size={24} />
+                COMPETITIVE AI SCOUT (WINNER ALPHA)
               </h2>
               <IntelligenceTab opportunityId={opportunity.id} />
               <div className="mb-8"></div>
@@ -252,7 +251,9 @@ export default function OpportunityDetail() {
               <div className="prizes-grid-modern">
                 {opportunity.prizes.map((prize, index) => (
                   <div key={index} className="prize-item-modern">
-                    <div className="prize-icon-modern">✨</div>
+                    <div className="prize-icon-modern">
+                      <PremiumIcon name="sparkles" size={16} />
+                    </div>
                     <div className="prize-info-modern">
                       <span className="prize-label-modern">{prize.label}</span>
                       <span className="prize-value-modern">{prize.value}</span>
@@ -301,10 +302,10 @@ export default function OpportunityDetail() {
           )}
         </div>
 
-        {/* Actions */}
         <div className="detail-actions-modern">
-          <button onClick={handleSave} disabled={saving} className="detail-button save">
-            {saving ? 'Saving...' : isAuthenticated ? '📌 Save to Tracker' : '📌 Save (Login Required)'}
+          <button onClick={handleSave} disabled={saving} className="detail-button save flex items-center justify-center gap-2">
+            <PremiumIcon name="pin" size={16} color="#fff" />
+            {saving ? 'Saving...' : isAuthenticated ? 'Save to Tracker' : 'Save (Login Required)'}
           </button>
           <button onClick={handleApply} className="detail-button apply">
             Apply Now →

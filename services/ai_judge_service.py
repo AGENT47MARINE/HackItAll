@@ -50,16 +50,37 @@ class AIJudgeService:
 
     def _run_llm_audit(self, context: Dict) -> Dict:
         """mimic a judge's appraisal of the work."""
-        # Simulated high-quality AI audit
+        prompt = f"""
+        You are an elite AI Hackathon Judge. You are auditing a project for a team.
+        
+        JUDGE PERSONA / CRITERIA:
+        {context['winning_criteria']}
+        
+        SUBMISSION TO AUDIT:
+        Title: {context['submission_title']}
+        Description: {context['submission_desc']}
+        GitHub/Demo: {context['github_url']}
+        
+        TASK:
+        1. Calculate a 'winning_probability' (0.0 to 1.0) based on how well this matches the criteria.
+        2. Identify 2-3 specific 'red_flags' (what might cause the judges to reject this?).
+        3. Suggest 2-3 'improvements' (high-impact strategic fixes).
+        4. Provide 'judge_persona_feedback' (write a short paragraph in the first person as the judge).
+        
+        Return ONLY valid JSON.
+        """
+        
+        try:
+            result = self.extractor.generic_extract(prompt)
+            if result and "winning_probability" in result:
+                return result
+        except Exception as e:
+            print(f"LLM Audit failed: {e}")
+
+        # Fallback to smart templates if LLM is offline
         return {
-            "winning_probability": 0.82,
-            "red_flags": [
-                "Technical description is slightly too jargon-heavy for the 'Business Value' track judges.",
-                "Missing clear mention of the sponsor's specific API feature (Bedrock Nova) in the readme."
-            ],
-            "improvements": [
-                "Rewrite the first paragraph of your description to focus on the 'User Impact' rather than the 'Architecture'.",
-                "Add a 15-second screen recording showing the AI inference speed—judges here value performance."
-            ],
-            "judge_persona_feedback": "As a Senior Engineer at a Cloud company (likely judge persona), I appreciate the modularity, but I'm looking for a more distinct 'Aha' moment in the demo. The current description is solid but safe."
+            "winning_probability": 0.65,
+            "red_flags": ["The technical implementation details are too vague for the 'Execution' category."],
+            "improvements": ["Add a clear explanation of how your solution handles large-scale data concurrency."],
+            "judge_persona_feedback": "I've seen many similar projects. To stand out, you need to prove your solution works beyond a simple happy-path demo."
         }

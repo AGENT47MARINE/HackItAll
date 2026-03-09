@@ -1,6 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -17,6 +17,7 @@ class ProfileResponse(BaseModel):
     """Response model for profile data."""
     id: str
     email: str
+    username: Optional[str] = None
     phone: Optional[str]
     interests: list[str]
     skills: list[str]
@@ -28,6 +29,14 @@ class ProfileResponse(BaseModel):
     updated_at: str
     participation_history: list
     activity_streak: int = 0
+    
+class ResumeSyncResponse(ProfileResponse):
+    """Response model for resume synchronization."""
+    extracted_skills: list[str] = []
+    extracted_interests: list[str] = []
+    raw_text: str = ""
+    new_skills_count: int = 0
+    new_interests_count: int = 0
 
 
 class UpdateProfileRequest(BaseModel):
@@ -192,7 +201,7 @@ async def export_user_data(
     return export_data
 
 
-@router.post("/profile/resume", response_model=ProfileResponse)
+@router.post("/profile/resume", response_model=ResumeSyncResponse)
 async def upload_resume(
     file: UploadFile = File(...),
     current_user_id: str = Depends(get_current_user),
@@ -226,10 +235,17 @@ async def upload_resume(
         if not profile_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Profile not found"
+                detail="Profile could not be updated from resume."
             )
-            
-        return ProfileResponse(**profile_data)
+        
+        # The service returns a dict with combined profile and metadata
+        # Create response model while ensuring no duplicate keys if merged in service
+        return ResumeSyncResponse(
+            **profile_data,
+            # These are already in profile_data if updated by service, 
+            # but explicit override for clarity is only safe if not in profile_data
+            # or if profile_data is filtered.
+        )
         
     except ValueError as e:
         raise HTTPException(

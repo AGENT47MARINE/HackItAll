@@ -29,38 +29,25 @@ class SchedulerService:
             notification_service = NotificationService(db)
             now = datetime.utcnow()
             
-            # Find reminders that need to be sent
-            pending_reminders = db.query(Reminder).filter(
+            # Find reminders that need to be sent, joining with Opportunity to avoid N+1
+            pending_reminders_with_opp = db.query(Reminder, Opportunity).join(
+                Opportunity, Reminder.opportunity_id == Opportunity.id
+            ).filter(
                 Reminder.sent == False,
                 Reminder.scheduled_time <= now
             ).all()
             
-            logger.info(f"Processing {len(pending_reminders)} pending reminders")
+            logger.info(f"Processing {len(pending_reminders_with_opp)} pending reminders")
             
-            for reminder in pending_reminders:
+            for reminder, opportunity in pending_reminders_with_opp:
                 try:
-                    # Get opportunity details
-                    opportunity = db.query(Opportunity).filter(
-                        Opportunity.id == reminder.opportunity_id
-                    ).first()
-                    
-                    if not opportunity:
-                        logger.warning(f"Opportunity {reminder.opportunity_id} not found for reminder {reminder.id}")
-                        reminder.sent = True
-                        continue
-                    
                     # Calculate time until deadline
                     time_until = opportunity.deadline - now
                     days_until = time_until.days
                     hours_until = time_until.total_seconds() / 3600
                     
-                    # Determine reminder type
-                    if days_until >= 6 and days_until <= 8:
-                        reminder_type = "7_day"
-                    elif hours_until >= 20 and hours_until <= 28:
-                        reminder_type = "24_hour"
-                    else:
-                        reminder_type = "general"
+                    # Get reminder type
+                    reminder_type = reminder.type or "general"
                     
                     # Send notification
                     success = notification_service.send_deadline_reminder(
@@ -71,7 +58,7 @@ class SchedulerService:
                     
                     if success:
                         reminder.sent = True
-                        logger.info(f"Sent reminder {reminder.id} for opportunity {opportunity.id}")
+                        logger.info(f"Sent {reminder_type} reminder {reminder.id} for opportunity {opportunity.id}")
                     else:
                         logger.error(f"Failed to send reminder {reminder.id}")
                 

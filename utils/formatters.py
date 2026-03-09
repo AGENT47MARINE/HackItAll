@@ -32,17 +32,20 @@ class ResponseFormatter:
         activity_streak = 0
         if participation_history:
             # Simple streak calculation based on consecutive days with activity
-            dates = sorted(set(entry.get('created_at', '')[:10] for entry in participation_history))
+            dates = sorted(set(entry.get('created_at')[:10] for entry in participation_history if entry.get('created_at')))
             if dates:
                 current_streak = 1
                 for i in range(1, len(dates)):
-                    prev_date = datetime.fromisoformat(dates[i-1])
-                    curr_date = datetime.fromisoformat(dates[i])
-                    diff = (curr_date - prev_date).days
-                    if diff == 1:
-                        current_streak += 1
-                    elif diff > 1:
-                        current_streak = 1
+                    try:
+                        prev_date = datetime.fromisoformat(dates[i-1])
+                        curr_date = datetime.fromisoformat(dates[i])
+                        diff = (curr_date - prev_date).days
+                        if diff == 1:
+                            current_streak += 1
+                        elif diff > 1:
+                            current_streak = 1
+                    except (ValueError, TypeError):
+                        continue
                 activity_streak = current_streak
         
         return {

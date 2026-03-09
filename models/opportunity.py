@@ -12,19 +12,19 @@ class Opportunity(Base):
     __tablename__ = "opportunities"
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    title = Column(String(255), nullable=False)
+    title = Column(String(500), nullable=False)
     description = Column(Text, nullable=False)
     type = Column(String(50), nullable=False)  # hackathon, scholarship, internship, skill_program
     deadline = Column(DateTime, nullable=False, index=True)
-    application_link = Column(String(500), nullable=False)
+    application_link = Column(String(1000), nullable=False)
     image_url = Column(String(1000), nullable=True)  # Store scraped og:image
     tags = Column(Text, nullable=False, default="[]")  # JSON array stored as text
     required_skills = Column(Text, nullable=True, default="[]")  # JSON array stored as text
-    eligibility = Column(String(50), nullable=True)  # education level eligibility
-    location = Column(String(255), nullable=True)
+    eligibility = Column(String(500), nullable=True)  # education level eligibility
+    location = Column(String(500), nullable=True)
     location_type = Column(String(50), nullable=False, default="Online", index=True)  # Online, In-Person, Hybrid
     source_url = Column(String(1000), nullable=True, unique=True)  # Used for dedup during scraping
-    status = Column(String(20), default="active", nullable=False, index=True)  # active, archived
+    status = Column(String(50), default="active", nullable=False, index=True)  # active, archived
     tracked_count = Column(Integer, default=0, nullable=False, index=True) # Opportunity saves
     participant_count = Column(Integer, default=0, nullable=False, index=True) # Active participation entries
     source_registration_count = Column(Integer, default=0, nullable=False, index=True) # External popularity
@@ -40,6 +40,9 @@ class Opportunity(Base):
         Index('idx_opportunities_status', 'status'),
         Index('idx_opportunities_type_status', 'type', 'status'),
         Index('idx_opportunities_deadline_status', 'deadline', 'status'),
+        Index('idx_opportunities_eligibility', 'eligibility'),
+        Index('idx_opportunities_location_type', 'location_type'),
+        Index('idx_opportunities_active_deadline', 'status', 'deadline'),  # For optimized For You queries
     )
     
     def __init__(self, **kwargs):

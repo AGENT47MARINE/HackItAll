@@ -149,6 +149,13 @@ const PixelIcon = ({ name, size = 24, color, active = false, className = "" }) =
             <svg viewBox="0 0 16 16" fill="none">
                 <path d="M3 9l3 3l7-7" stroke="currentColor" strokeWidth="3" />
             </svg>
+        ),
+        // 🔔 Bell
+        bell: (
+            <svg viewBox="0 0 16 16" fill="currentColor">
+                <path d="M4 11h8v1H4v-1zm1-1h6V6c0-1.7-1.3-3-3-3s-3 1.3-3 3v4zm2 3h2v1H7v-1z" />
+                <rect x="7" y="12" width="2" height="1" fillOpacity="0.8" />
+            </svg>
         )
     };
 

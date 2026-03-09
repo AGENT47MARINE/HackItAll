@@ -1,6 +1,7 @@
 """Tracking database models for saved opportunities and participation history."""
 from datetime import datetime
 from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, Index
+from sqlalchemy.orm import relationship
 import uuid
 
 from database import Base
@@ -41,12 +42,17 @@ class ParticipationHistory(Base):
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     opportunity_id = Column(String(36), ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=False)
     status = Column(String(20), nullable=False)  # applied, accepted, rejected, completed
+    current_round = Column(String(36), default="1", nullable=True) # e.g., "1", "2", "Final"
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Add relationship to opportunity for efficient JOIN queries
+    opportunity = relationship("Opportunity", lazy="select")
     
     # Add index for efficient user queries
     __table_args__ = (
         Index('idx_participation_user', 'user_id'),
+        Index('idx_participation_user_opportunity', 'user_id', 'opportunity_id'),
     )
     
     def __init__(self, **kwargs):
