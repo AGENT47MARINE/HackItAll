@@ -1,0 +1,88 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Fault Condition** - Category Filter Triggers Search
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the bug exists
+  - **Scoped PBT Approach**: Scope the property to concrete failing cases - clicking category buttons without a search query
+  - Test that clicking any category filter button (hackathon, scholarship, internship, skill_program) triggers searchOpportunities() when searchQuery is empty
+  - The test assertions should verify: searchOpportunities() is called AND the correct category type parameter is passed
+  - Test cases to include:
+    - Initial load + category click: Load page with no query → click "hackathon" → assert search triggered with type='hackathon'
+    - Category switch: Click "hackathon" → click "scholarship" → assert search triggered with type='scholarship'
+    - Empty query + category: Clear search query → click "internship" → assert search triggered with type='internship'
+    - All button: Click "hackathon" → click "All" → assert search triggered with type=null
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+  - Document counterexamples found (e.g., "searchOpportunities() not called when clicking 'hackathon' with empty query")
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+
+- [ ] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Non-Category-Filter Behavior
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-buggy inputs (text search, AI mode, "All" button, Search button, combined filters)
+  - Write property-based tests capturing observed behavior patterns:
+    - Text search: Entering query + clicking Search filters by search term
+    - AI mode: Toggling AI mode + searching performs semantic search
+    - All button: Clicking "All" displays all opportunities
+    - Search button: Clicking Search executes search with current filters
+    - Combined filters: Search query + category filter applies both filters
+    - Results count: Display shows correct number of filtered results
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [ ] 3. Fix for search category filter bug
+
+  - [ ] 3.1 Implement the fix in Opportunities.jsx
+    - Modify the useEffect hook (lines 17-21) to trigger search when selectedType changes
+    - Remove or modify the guard condition `if (searchQuery || selectedType)` to allow execution when only selectedType is set
+    - Ensure searchOpportunities() is called when selectedType changes to any non-null value, regardless of searchQuery state
+    - Ensure clicking "All" (selectedType = null) triggers appropriate search behavior
+    - Preserve existing logic for isAISearch triggering search
+    - Consider two implementation approaches:
+      - Option 1: Change guard to `if (searchQuery || selectedType !== null || isAISearch)`
+      - Option 2: Remove guard entirely and let API handle empty parameters
+    - _Bug_Condition: isBugCondition(input) where input.buttonType IN ['hackathon', 'scholarship', 'internship', 'skill_program'] AND input.currentSearchQuery === '' AND NOT searchTriggered(input.buttonType)_
+    - _Expected_Behavior: For any category filter button click, searchOpportunities() SHALL be called immediately with the selected category type parameter, regardless of searchQuery state_
+    - _Preservation: All non-category-filter interactions (text search, AI mode, "All" button, Search button, combined filters) SHALL produce exactly the same behavior as original code_
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+  - [ ] 3.2 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Category Filter Triggers Search
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - Verify all test cases pass:
+      - Initial load + category click works
+      - Category switch works
+      - Empty query + category works
+      - All button works
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+
+  - [ ] 3.3 Verify preservation tests still pass
+    - **Property 2: Preservation** - Non-Category-Filter Behavior
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all preservation tests still pass:
+      - Text search behavior unchanged
+      - AI mode behavior unchanged
+      - All button behavior unchanged
+      - Search button behavior unchanged
+      - Combined filters behavior unchanged
+      - Results count display unchanged
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
+
+- [ ] 4. Checkpoint - Ensure all tests pass
+  - Verify all exploration tests pass (bug is fixed)
+  - Verify all preservation tests pass (no regressions)
+  - Manually test the UI to confirm category filters work as expected
+  - Ensure all tests pass, ask the user if questions arise
