@@ -1,6 +1,6 @@
 # HACKITALL
 
-An AI-powered web platform that helps students—especially first-generation and underserved learners—discover, track, and successfully apply to hackathons, scholarships, internships, and skill programs.
+An AI-powered web platform that helps students especially first-generation and underserved learners—discover, track, and successfully apply to hackathons, scholarships, internships, and skill programs.
 
 ## Features
 
