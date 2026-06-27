@@ -1,0 +1,123 @@
+{
+  "document_type": "Pahani (Record of Rights)",
+  "source_portal": "Dharani – Telangana State Land Records Portal (dharani.telangana.gov.in)",
+  "document_id": "TS/MBN/MBN/KMB/PAH/2024/003817",
+  "generated_on": "2024-03-14T10:42:00+05:30",
+  "digital_signature": "VALID – Signed by District Collector, Mahabubnagar",
+
+  "location": {
+    "state": "Telangana",
+    "district": "Mahabubnagar",
+    "mandal": "Makthal",
+    "village": "Kambalapur",
+    "habitation": "Kambalapur (Main)"
+  },
+
+  "plot_details": {
+    "survey_number": "87/AA",
+    "pattadar_passbook_no": "TS121400802024001122",
+    "title_deed_number": "TS121400802024001122-TD",
+    "land_classification": "Agricultural",
+    "sub_classification": "Wet (Tari) – Tank Irrigated",
+    "total_area_hectares": 1.42,
+    "total_area_acres": 3.508,
+    "boundaries": {
+      "north": "Survey No. 86 – belonging to Ramaiah Goud",
+      "south": "Survey No. 88 – Tank Bund (Govt.)",
+      "east": "Survey No. 87/AB – belonging to Laxmi Devi",
+      "west": "Village Road (Panchayat)"
+    }
+  },
+
+  "ownership": [
+    {
+      "pattadar_name": "Venkata Ramaiah Goud",
+      "relation": "S/o Late Mallaiah Goud",
+      "caste": "OBC – Goud",
+      "aadhar_masked": "XXXX-XXXX-4712",
+      "share": "1/2",
+      "passbook_issued": true
+    },
+    {
+      "pattadar_name": "Savitri Devi Goud",
+      "relation": "W/o Venkata Ramaiah Goud",
+      "caste": "OBC – Goud",
+      "aadhar_masked": "XXXX-XXXX-6903",
+      "share": "1/2",
+      "passbook_issued": true
+    }
+  ],
+
+  "possession": {
+    "type": "Owner Cultivator (Swadhina)",
+    "cultivator_name": "Venkata Ramaiah Goud",
+    "tenancy": "None"
+  },
+
+  "cultivation": {
+    "kharif_2023": {
+      "crop": "Paddy (Fine Variety – BPT 5204)",
+      "area_hectares": 1.20,
+      "irrigation": "Tank (Kambalapur Cheruvu)",
+      "crop_loan": {
+        "bank": "Telangana Grameena Bank, Makthal Branch",
+        "loan_amount_inr": 85000,
+        "loan_account": "TGB/MKT/KCC/2023/00441",
+        "sanctioned_date": "2023-06-10"
+      }
+    },
+    "rabi_2023_24": {
+      "crop": "Jowar + Bengal Gram (Intercrop)",
+      "area_hectares": 1.42,
+      "irrigation": "Rain-fed (Tanked water supplementary)"
+    }
+  },
+
+  "encumbrances": {
+    "mortgage": {
+      "exists": true,
+      "mortgagee": "Telangana Grameena Bank, Makthal",
+      "type": "Simple Mortgage – KCC Crop Loan",
+      "amount_inr": 85000,
+      "date_of_mortgage": "2023-06-10",
+      "date_of_release": null,
+      "remarks": "Active – due for release after crop loan repayment"
+    },
+    "litigation": "None",
+    "attachment": "None",
+    "govt_acquisition": "None"
+  },
+
+  "govt_dues": {
+    "land_revenue_annual_inr": 48,
+    "revenue_paid_upto": "2023-24",
+    "receipt_no": "TS/MBN/2024/LR/07742",
+    "water_rate_inr": 0
+  },
+
+  "mutation_history": [
+    {
+      "mutation_no": "MUT/MBN/MKT/KMB/0148/2012",
+      "type": "Inheritance",
+      "date": "2012-09-22",
+      "from": "Mallaiah Goud (Deceased)",
+      "to": "Venkata Ramaiah Goud",
+      "order": "Approved – Mandal Revenue Officer, Makthal"
+    },
+    {
+      "mutation_no": "MUT/MBN/MKT/KMB/0214/2019",
+      "type": "Dharani Registration – Co-owner addition",
+      "date": "2019-11-05",
+      "from": "Venkata Ramaiah Goud (Sole)",
+      "to": "Venkata Ramaiah Goud + Savitri Devi Goud",
+      "order": "Approved – Registered via Dharani Portal"
+    }
+  ],
+
+  "certifying_officer": {
+    "name": "Sri M. Srinivas Reddy",
+    "designation": "Mandal Revenue Officer, Makthal",
+    "office": "MRO Office, Makthal, Dist. Mahabubnagar, Telangana",
+    "issued_date": "2024-03-14"
+  }
+}
